@@ -11,7 +11,12 @@ async function readAll() {
 }
 
 async function readById(id) {
-    const result = await db('usuarios').where({ id: id }).select("*").first();
+    const result = await db('usuarios').where({ id: id }).first();
+    return result;
+}
+
+async function readByEmail(email) {
+    const result = await db('usuarios').where({ email: email }).first();
     return result;
 }
 
@@ -30,4 +35,4 @@ async function remove(id) {
     return deleted;
 }
 
-module.exports = { create, readAll, readById, update, patch, remove };
+module.exports = { create, readAll, readById, readByEmail, update, patch, remove };
