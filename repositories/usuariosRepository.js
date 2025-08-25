@@ -1,7 +1,7 @@
 const db = require('../db/db');
 
 async function create(user) {
-    const created = await db('usuarios').insert(user).returning("*").first();
+    const [created] = await db('usuarios').insert(user).returning("*");
     return created;
 }
 
