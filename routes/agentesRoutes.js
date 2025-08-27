@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const agentesController = require("../controllers/agentesController");
+const authMiddleware = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -21,7 +22,7 @@ const agentesController = require("../controllers/agentesController");
  *         description: Lista de agentes retornada com sucesso
  *
  */
-router.get("/", agentesController.getAllAgentes);
+router.get("/", authMiddleware, agentesController.getAllAgentes);
 
 /**
  * @swagger
@@ -41,7 +42,7 @@ router.get("/", agentesController.getAllAgentes);
  *       404:
  *         description: Agente não encontrado
  */
-router.get("/:id", agentesController.getAgenteById);
+router.get("/:id", authMiddleware, agentesController.getAgenteById);
 
 /** 
  * @swagger
@@ -69,7 +70,7 @@ router.get("/:id", agentesController.getAgenteById);
  *       400:
  *         description: Campo não preenchido ou vazio.
  */
-router.post("/", agentesController.createAgente);
+router.post("/", authMiddleware, agentesController.createAgente);
 
 /**
  * @swagger
@@ -103,7 +104,7 @@ router.post("/", agentesController.createAgente);
  *       404:
  *         description: Agente não encontrado ou campo não preenchido
  */
-router.put("/:id", agentesController.completeUpdateAgente);
+router.put("/:id", authMiddleware, agentesController.completeUpdateAgente);
 
 /**
  * @swagger
@@ -133,7 +134,7 @@ router.put("/:id", agentesController.completeUpdateAgente);
  *       404:
  *         description: Agente não encontrado ou campo não preenchido
  */
-router.patch("/:id", agentesController.updateCargoAgente);
+router.patch("/:id", authMiddleware, agentesController.updateCargoAgente);
 
 /**
  * @swagger
@@ -153,6 +154,6 @@ router.patch("/:id", agentesController.updateCargoAgente);
  *       404:
  *         description: Agente não encontrado
  */
-router.delete("/:id", agentesController.deleteAgente);
+router.delete("/:id", authMiddleware, agentesController.deleteAgente);
 
 module.exports = router;

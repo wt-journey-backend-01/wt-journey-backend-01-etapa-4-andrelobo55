@@ -1,6 +1,7 @@
 const express = require('express');
 const casosController = require("../controllers/casosController");
 const router = express.Router();
+const authMiddleware = require('../middlewares/authMiddleware');
 
 /** 
  * @swagger
@@ -19,7 +20,7 @@ const router = express.Router();
  *       200:
  *         description: Listar todos os casos
 */
-router.get("/", casosController.getAllCasos);
+router.get("/", authMiddleware, casosController.getAllCasos);
 
 /**
  * @swagger
@@ -39,7 +40,7 @@ router.get("/", casosController.getAllCasos);
  *       404:
  *         description: Caso não encontrado
  */
-router.get("/:id", casosController.getCasoById);
+router.get("/:id", authMiddleware, casosController.getCasoById);
 
 /** 
  * @swagger
@@ -69,7 +70,7 @@ router.get("/:id", casosController.getCasoById);
  *       400:
  *         description: Campo não preenchido ou vazio.
  */
-router.post("/", casosController.createCaso);
+router.post("/", authMiddleware, casosController.createCaso);
 
 /**
  * @swagger
@@ -105,7 +106,7 @@ router.post("/", casosController.createCaso);
  *       404:
  *         description: Caso não encontrado
  */
-router.put("/:id", casosController.completeUpdateCaso);
+router.put("/:id", authMiddleware, casosController.completeUpdateCaso);
 
 /**
  * @swagger
@@ -149,7 +150,7 @@ router.put("/:id", casosController.completeUpdateCaso);
  *       404:
  *         description: Caso não encontrado
  */
-router.patch("/:id", casosController.updatePartialCaso);
+router.patch("/:id", authMiddleware, casosController.updatePartialCaso);
 
 /**
  * @swagger
@@ -169,6 +170,6 @@ router.patch("/:id", casosController.updatePartialCaso);
  *       404:
  *         description: Caso não encontrado
  */
-router.delete("/:id", casosController.deleteCaso);
+router.delete("/:id", authMiddleware, casosController.deleteCaso);
 
 module.exports = router;

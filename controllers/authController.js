@@ -3,7 +3,7 @@ const APIError = require('../utils/errorHandler');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const SECRET = process.env.SECRET || 'secret';
+const SECRET = process.env.JWT_SECRET || 'secret';
 
 const login = async (req, res, next) => {
     try {
@@ -22,11 +22,19 @@ const login = async (req, res, next) => {
             return next(new APIError(400, 'Invalid password.'));
         }
 
-        const token = jwt.sign({ id: user.id, nome: user.nome, email: user.email}, SECRET,
+        const token = jwt.sign({ id: user.id, nome: user.nome, email: user.email }, SECRET,
             { expiresIn: '1h' }); // cria um token a partir do payload do usuário, secret e o tempo
         // de expiração
 
-        res.status(200).json({ message: 'User logged in successfully', token });
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 1000,
+            path: '/'
+        });
+
+        res.status(200).json({ message: 'User logged in successfully', access_token: token });
     } catch (error) {
         return next(new APIError(500, 'Error logging in'));
     }
@@ -41,15 +49,42 @@ const register = async (req, res, next) => {
         if (user) { // verifica se o email existe
             return next(new APIError(400, 'Email already exists.'));
         }
-        const salt = await bcrypt.genSalt(parseInt(process.env.SALT_ROUNDS) || 10); // cria o salt
+        const salt = await bcrypt.genSalt(parseInt(process.env.SALT_ROUNDS) || 10); // cria o 
+        // salt
         const hashedPassword = await bcrypt.hash(password, salt); // aplica o hash na senha
 
         const newUser = await usuariosRepository.create({ nome, email, password: hashedPassword });
 
-        res.status(201).json({ message: 'User created successfully', newUser });
+        const { password: _, ...safeUser } = newUser;
+
+        res.status(201).json({ message: 'User created successfully', user: safeUser });
     } catch (error) {
+        console.log(error);
         return next(new APIError(500, 'Error register new user.'));
     }
 }
 
-module.exports = { login, register };
+const deleteUser = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const user = await usuariosRepository.readById(id);
+
+        if (!user) {
+            return next(new APIError(404, 'User not found.'));
+        }
+
+        await usuariosRepository.remove(id);
+
+        res.status(204).send();
+    } catch (error) {
+        return next(new APIError(500, 'Error in deleting user.'));
+    }
+}
+
+const logout = (req, res, next) => {
+        res.clearCookie('token', { path: '/' });
+
+        return res.status(200).json({ status: 200, message: 'Logout successfully.' });
+}
+
+module.exports = { login, register, deleteUser, logout };

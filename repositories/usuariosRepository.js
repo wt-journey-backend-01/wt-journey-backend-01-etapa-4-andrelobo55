@@ -21,12 +21,12 @@ async function readByEmail(email) {
 }
 
 async function update(id, user) {
-    const updated = await db('usuarios').where({ id: id }).update(user).returning("*").first();
+    const [updated] = await db('usuarios').where({ id: id }).update(user).returning("*");
     return updated;
 }
 
 async function patch(id, fields) {
-    const updated = await db('usuarios').where({ id: id }).update(fields).returning("*").first();
+    const [updated] = await db('usuarios').where({ id: id }).update(fields).returning("*");
     return updated;
 }
 
