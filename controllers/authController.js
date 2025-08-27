@@ -7,7 +7,7 @@ const SECRET = process.env.JWT_SECRET || 'secret';
 
 const login = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const { email, senha } = req.body;
         const user = await usuariosRepository.readByEmail(email); // recebe um objeto usuário com o 
         // mesmo email passado no body
 
@@ -15,7 +15,7 @@ const login = async (req, res, next) => {
             return next(new APIError(404, 'User not found.'));
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password); // compara se a senha do
+        const isPasswordValid = await bcrypt.compare(senha, user.senha); // compara se a senha do
         // body é a mesma que a que está armazenada no banco de dados
 
         if (!isPasswordValid) { // senão for a mesma, retorna erro
@@ -36,13 +36,14 @@ const login = async (req, res, next) => {
 
         res.status(200).json({ message: 'User logged in successfully', access_token: token });
     } catch (error) {
+        console.log(error);
         return next(new APIError(500, 'Error logging in'));
     }
 }
 
 const register = async (req, res, next) => {
     try {
-        const { nome, email, password } = req.body;
+        const { nome, email, senha } = req.body;
         const user = await usuariosRepository.readByEmail(email); // recebe um usuário a partir do
         // email enviado pelo body
 
@@ -51,11 +52,11 @@ const register = async (req, res, next) => {
         }
         const salt = await bcrypt.genSalt(parseInt(process.env.SALT_ROUNDS) || 10); // cria o 
         // salt
-        const hashedPassword = await bcrypt.hash(password, salt); // aplica o hash na senha
+        const hashedPassword = await bcrypt.hash(senha, salt); // aplica o hash na senha
 
-        const newUser = await usuariosRepository.create({ nome, email, password: hashedPassword });
+        const newUser = await usuariosRepository.create({ nome, email, senha: hashedPassword });
 
-        const { password: _, ...safeUser } = newUser;
+        const { senha: _, ...safeUser } = newUser;
 
         res.status(201).json({ message: 'User created successfully', user: safeUser });
     } catch (error) {
