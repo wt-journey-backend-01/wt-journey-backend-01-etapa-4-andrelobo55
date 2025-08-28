@@ -87,7 +87,7 @@ const register = async (req, res, next) => {
 
         const { senha: _, ...safeUser } = newUser;
 
-        res.status(201).json({ safeUser });
+        res.status(201).json(safeUser);
     } catch (error) {
         console.log(error);
         return next(new APIError(500, 'Error register new user.'));
