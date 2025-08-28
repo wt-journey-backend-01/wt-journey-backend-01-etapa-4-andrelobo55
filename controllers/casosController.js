@@ -2,13 +2,13 @@ const casosRepository = require("../repositories/casosRepository");
 const agentesRepository = require("../repositories/agentesRepository");
 const APIError = require("../utils/errorHandler");
 
-const getAllCasos = async(req, res, next) => {
+const getAllCasos = async (req, res, next) => {
     const casos = await casosRepository.readAll();
 
     return res.status(200).json(casos);
 }
 
-const getCasoById = async(req, res, next) => {
+const getCasoById = async (req, res, next) => {
     try {
         const { id } = req.params;
 
@@ -28,8 +28,14 @@ const getCasoById = async(req, res, next) => {
     }
 }
 
-const createCaso = async(req, res, next) => {
+const createCaso = async (req, res, next) => {
     try {
+        const allowedFields = ['titulo', 'descricao', 'status', 'agente_id'];
+        const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+        if (extraFields.length > 0) {
+            return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+        }
+
         const { titulo, descricao, status, agente_id } = req.body;
 
         if (!titulo) {
@@ -62,13 +68,19 @@ const createCaso = async(req, res, next) => {
     }
 }
 
-const completeUpdateCaso = async(req, res, next) => {
+const completeUpdateCaso = async (req, res, next) => {
     try {
         const { id } = req.params;
         const caso = await casosRepository.readById(id);
 
         if (!caso) {
             return next(new APIError(404, "Caso não encontrado"));
+        }
+
+        const allowedFields = ['titulo', 'descricao', 'status', 'agente_id'];
+        const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+        if (extraFields.length > 0) {
+            return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
         }
 
         const { id: idBody, titulo, descricao, status, agente_id } = req.body;

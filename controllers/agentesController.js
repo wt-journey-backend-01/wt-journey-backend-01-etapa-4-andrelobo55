@@ -73,13 +73,13 @@ const completeUpdateAgente = async (req, res, next) => {
             return next(new APIError(404, "Agente não encontrado"));
         }
 
-        const { id: idBody, nome, dataDeIncorporacao, cargo } = req.body;
-
         const allowedFields = ['id', 'nome', 'dataDeIncorporacao', 'cargo'];
         const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
         if (extraFields.length > 0) {
             return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
         }
+        
+        const { id: idBody, nome, dataDeIncorporacao, cargo } = req.body;
 
         if (idBody && idBody !== id) {
             return next(new APIError(400, "Não é permitido alterar o campo 'id'"));
