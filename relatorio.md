@@ -1,294 +1,265 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 9 créditos restantes para usar o sistema de feedback AI.
+Você tem 8 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para andrelobo55:
 
-Nota final: **50.9/100**
+Nota final: **52.5/100**
 
-```markdown
-# Feedback para andrelobo55 🚓🔐
+Olá, andrelobo55! 👋🎉 Que jornada incrível você fez até aqui com essa API REST em Node.js, Express e PostgreSQL! Quero começar parabenizando você por várias coisas que estão muito bem feitas no seu projeto:
 
-Olá André! Primeiro, quero te parabenizar pela dedicação e pelo progresso no seu projeto! 🎉 Você conseguiu implementar várias funcionalidades essenciais, e isso é um grande mérito. Vamos juntos destrinchar o que está indo bem e onde podemos melhorar para deixar sua API ainda mais profissional e segura! 💪
+- Você estruturou muito bem a API, com controllers, repositories, middlewares e rotas bem separados — isso é essencial para um código limpo e escalável.
+- A autenticação via JWT está funcionando, e você já implementou registro, login, logout e exclusão de usuários com as respostas corretas e tratamento de erros.
+- O middleware de autenticação está protegendo as rotas de agentes e casos, garantindo segurança.
+- O uso do bcrypt para hashing das senhas está correto, assim como a validação da força da senha no registro.
+- Você documentou muito bem no INSTRUCTIONS.md o fluxo de autenticação e uso do token JWT.
+- Os testes base importantes de criação, login, logout e exclusão de usuários passaram, o que é um ótimo sinal! 👏
 
----
+Além disso, parabéns por conseguir avançar em alguns bônus, como o endpoint `/usuarios/me` e alguns filtros básicos (mesmo que alguns testes bônus tenham falhado).
 
-## 🎉 Pontos Fortes e Conquistas Bônus
-
-- Sua API está protegendo bem as rotas de agentes e casos com o middleware de autenticação JWT. Isso é fundamental e você acertou a aplicação do middleware nas rotas.
-- O login está funcionando corretamente, gerando JWT com expiração válida e armazenando o token no cookie com boas práticas (httpOnly, secure, sameSite).
-- O logout limpa o cookie e responde com status 200, o que é ótimo para a experiência do usuário.
-- Você já implementou o endpoint de exclusão de usuários com resposta correta.
-- O registro de usuários funciona e impede duplicidade de emails.
-- A documentação no `INSTRUCTIONS.md` está clara e explica bem o uso do JWT no header `Authorization`.
-- Parabéns por ter passado todos os testes base essenciais para autenticação, agentes e casos, além de alguns bônus! Isso mostra que seu projeto está no caminho certo.
+Agora, vamos conversar sobre os pontos onde a nota foi impactada, para você destravar de vez e garantir que sua API esteja 100% pronta para produção! 🚀
 
 ---
 
-## ⚠️ Análise dos Testes que Falharam e Pontos de Melhoria
+## Análise dos Testes que Falharam e Causas Raiz
 
-### 1. Falhas nas validações de criação de usuários (muitos erros 400)
+### 1. **"USERS: Recebe erro 400 ao tentar criar um usuário com campo extra"**
 
-Os testes que falharam indicam que sua API não está validando corretamente os dados de entrada no cadastro de usuários. Veja os testes que falharam:
+- **O que o teste espera?**  
+  Que seu endpoint de registro rejeite payloads que contenham campos extras além de `nome`, `email` e `senha`. Por exemplo, se o usuário enviar `{ nome, email, senha, idade }`, deve retornar 400.
 
-- `USERS: Recebe erro 400 ao tentar criar um usuário com nome vazio`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com email vazio`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com email nulo`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com senha curta de mais`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com senha sem números`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com senha sem caractere especial`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com senha sem letra maiúscula`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com senha sem letras`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com senha nula`
-- `USERS: Recebe erro 400 ao tentar criar um usuário com campo faltante`
+- **O que acontece no seu código?**  
+  No seu `authController.register`, você valida os campos obrigatórios e o formato da senha e email, mas não faz validação para rejeitar campos extras no corpo da requisição.
 
-#### Por que isso está acontecendo?
+- **Por que isso é importante?**  
+  Permitir campos extras pode abrir brechas de segurança e inconsistência nos dados. Além disso, o teste exige esse comportamento para garantir robustez.
 
-No seu `authController.js`, o método `register` não possui nenhuma validação explícita para os campos `nome`, `email` e principalmente para os critérios complexos da senha (mínimo de 8 caracteres, ao menos uma letra minúscula, uma maiúscula, um número e um caractere especial).
+- **Como corrigir?**  
+  Você pode fazer uma checagem simples para validar se o objeto `req.body` contém apenas as chaves esperadas. Exemplo:
 
-Veja trecho do seu código:
+  ```js
+  const allowedFields = ['nome', 'email', 'senha'];
+  const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+  if (extraFields.length > 0) {
+    return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+  }
+  ```
 
-```js
-const register = async (req, res, next) => {
-    try {
-        const { nome, email, senha } = req.body;
-        const user = await usuariosRepository.readByEmail(email);
-
-        if (user) {
-            return next(new APIError(400, 'Email already exists.'));
-        }
-        const salt = await bcrypt.genSalt(parseInt(process.env.SALT_ROUNDS) || 10);
-        const hashedPassword = await bcrypt.hash(senha, salt);
-
-        const newUser = await usuariosRepository.create({ nome, email, senha: hashedPassword });
-
-        const { senha: _, ...safeUser } = newUser;
-
-        res.status(201).json({ message: 'User created successfully', user: safeUser });
-    } catch (error) {
-        console.log(error);
-        return next(new APIError(500, 'Error register new user.'));
-    }
-}
-```
-
-Você está assumindo que o corpo da requisição está correto, sem validar nada antes de criar o usuário.
-
-#### Como corrigir?
-
-Você precisa implementar validações robustas para:
-
-- Verificar se `nome`, `email` e `senha` estão presentes e não são vazios/nulos.
-- Validar o formato do email (pode usar regex simples ou libs como `validator`).
-- Validar a senha conforme os requisitos mínimos (8 caracteres, letras maiúsculas/minúsculas, número e caractere especial).
-
-Exemplo simples de validação de senha com regex:
-
-```js
-function validatePassword(password) {
-  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-  return regex.test(password);
-}
-```
-
-Você pode usar isso no início do seu `register`:
-
-```js
-if (!nome || nome.trim() === '') {
-  return next(new APIError(400, "Campo 'nome' é obrigatório."));
-}
-
-if (!email || email.trim() === '') {
-  return next(new APIError(400, "Campo 'email' é obrigatório."));
-}
-
-// Validação simples de email (pode melhorar com libs)
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-if (!emailRegex.test(email)) {
-  return next(new APIError(400, "Email inválido."));
-}
-
-if (!senha) {
-  return next(new APIError(400, "Campo 'senha' é obrigatório."));
-}
-
-if (!validatePassword(senha)) {
-  return next(new APIError(400, "Senha deve ter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais."));
-}
-```
-
-Assim, você garante que as regras de negócio da senha e dos dados do usuário estão sendo respeitadas antes de tentar salvar no banco.
+  Coloque isso logo no início do seu método `register`.
 
 ---
 
-### 2. Estrutura do projeto e arquivos faltantes
+### 2. **"AGENTS: Recebe status code 400 ao tentar criar agente com payload em formato incorreto"**
 
-Você tem quase toda a estrutura correta, mas reparei que o arquivo `usuariosRoutes.js` está sendo usado no `server.js`:
+- **Análise:**  
+  Seu controller de agentes (`createAgente`) já valida os campos obrigatórios (`nome`, `dataDeIncorporacao`, `cargo`) e chama `next` com erro 400 em caso de ausência ou formato inválido. Isso está correto.
 
-```js
-const usuariosRoutes = require('./routes/usuariosRoutes');
-app.use("/usuarios", usuariosRoutes);
-```
+- **Possível motivo da falha:**  
+  O teste provavelmente envia payloads com campos extras ou formato errado. Assim como no registro de usuário, você não está validando se o payload contém somente os campos esperados.
 
-Porém, você não enviou o conteúdo desse arquivo na submissão. Além disso, o enunciado pede que as rotas sensíveis de agentes e casos sejam protegidas, e que as rotas de usuários tenham endpoints como `/usuarios/me` (bônus) e exclusão de usuários.
+- **Recomendação:**  
+  Faça validação estrita no corpo da requisição para agentes, rejeitando campos extras. Exemplo:
 
-**Se esse arquivo não existir ou não estiver implementado corretamente, pode causar erros ou falhas em testes relacionados a usuários.**
+  ```js
+  const allowedFields = ['nome', 'dataDeIncorporacao', 'cargo'];
+  const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+  if (extraFields.length > 0) {
+    return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+  }
+  ```
 
-**Verifique se:**
-
-- Você criou o arquivo `routes/usuariosRoutes.js`.
-- Este arquivo exporta as rotas necessárias, incluindo `DELETE /usuarios/:id` (que está implementado no controller `authController.deleteUser`).
-- Se quiser fazer o bônus, implemente o `/usuarios/me` que retorna os dados do usuário autenticado.
-
----
-
-### 3. Middleware de autenticação: uso de token
-
-No seu `middlewares/authMiddleware.js`, você tem:
-
-```js
-const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers["authorization"];
-    const cookieToken = req.cookies?.token;
-    const headerToken = authHeader || cookieToken;
-    const token = authHeader && authHeader.split(" ")[1];
-    if (!token) {
-        return next(new APIError(401, "Token necessary."));
-    }
-    jwt.verify(token, process.env.JWT_SECRET || 'secret', (err) => {
-        if (err) {
-            return next(new APIError(400, "Invalid token."));
-        }
-        next();
-    });
-}
-```
-
-Aqui, você tenta pegar o token do header `Authorization` e, se não existir, do cookie. Porém, a variável `token` está sendo extraída **apenas do header**, ignorando o token do cookie.
-
-Ou seja, se o token estiver só no cookie, o middleware não vai conseguir validar e vai retornar erro.
-
-**Sugestão para corrigir:**
-
-```js
-const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers["authorization"];
-    const cookieToken = req.cookies?.token;
-
-    let token = null;
-
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-    } else if (cookieToken) {
-        token = cookieToken;
-    }
-
-    if (!token) {
-        return next(new APIError(401, "Token necessary."));
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
-        if (err) {
-            return next(new APIError(401, "Invalid token."));
-        }
-        req.user = decoded; // importante para acessar dados do usuário em rotas protegidas
-        next();
-    });
-}
-```
-
-Além disso, note que você não está adicionando `req.user = decoded`, o que pode ser importante para acessar o usuário autenticado dentro dos controllers.
+  Isso ajuda a garantir que só os campos esperados sejam aceitos.
 
 ---
 
-### 4. Status code e mensagens de erro
+### 3. **"AGENTS: Recebe status 404 ao tentar buscar um agente com ID em formato inválido"**
 
-No seu `authController.js` no método `login`, você retorna erros 404 para usuário não encontrado e 400 para senha inválida:
+- **Análise:**  
+  No `agentesController.getAgenteById`, você não faz validação explícita do formato do ID (por exemplo, se é um número válido). Você apenas chama `readById` e, se não encontrar, retorna 404.
 
-```js
-if (!user) {
-    return next(new APIError(404, 'User not found.'));
-}
+- **Por que isso é um problema?**  
+  Se o ID é uma string que não pode ser convertida para número, a consulta pode falhar ou retornar resultados inesperados.
 
-if (!isPasswordValid) {
-    return next(new APIError(400, 'Invalid password.'));
-}
-```
+- **Como melhorar?**  
+  Antes de buscar no banco, valide se o `id` é um número inteiro positivo:
 
-Porém, o enunciado pede que o endpoint de login retorne status 400 para email já em uso (no registro) e 401 Unauthorized para token inválido.
+  ```js
+  const idNum = Number(id);
+  if (isNaN(idNum) || idNum <= 0) {
+    return next(new APIError(404, "Agente não encontrado"));
+  }
+  ```
 
-No login, a resposta para credenciais inválidas normalmente é 401 Unauthorized para ambos casos (usuário não encontrado ou senha inválida), para não dar pistas de qual dado está errado.
-
-**Recomendo ajustar para:**
-
-```js
-if (!user) {
-    return next(new APIError(401, 'Invalid credentials.'));
-}
-
-if (!isPasswordValid) {
-    return next(new APIError(401, 'Invalid credentials.'));
-}
-```
-
-Assim, fica mais seguro e alinhado com boas práticas.
+  Isso evita consultas inválidas e responde corretamente ao cliente.
 
 ---
 
-### 5. Validação da senha no registro
+### 4. **"AGENTS: Recebe status code 400 ao tentar atualizar agente por completo com método PUT com payload em formato incorreto"**
 
-Você não está validando o formato da senha, conforme o requisito do desafio:
+- **Análise:**  
+  No método `completeUpdateAgente`, você valida os campos obrigatórios, mas não valida se o payload contém campos extras.
 
-> A senha deve ter no mínimo 8 caracteres, sendo pelo menos uma letra minúscula, uma letra maiúscula, um número e um caractere especial.
+- **Por que isso importa?**  
+  Assim como nos casos anteriores, o teste espera que você rejeite payloads com campos inesperados.
 
-Essa validação é fundamental para segurança e para passar os testes.
+- **Como corrigir?**  
+  Adicione validação para aceitar somente os campos `nome`, `dataDeIncorporacao`, `cargo` e opcionalmente `id` (que não pode ser alterado). Se encontrar campos extras, retorne erro 400.
 
----
+  Exemplo:
 
-## 📚 Recomendações de Aprendizado
-
-Para ajudar você a corrigir e aprimorar seu projeto, recomendo fortemente os seguintes vídeos:
-
-- **Validação e autenticação com JWT e bcrypt:**  
-  https://www.youtube.com/watch?v=L04Ln97AwoY  
-  *Esse vídeo, feito pelos meus criadores, explica muito bem como usar JWT e bcrypt juntos para autenticação segura.*
-
-- **Conceitos básicos de autenticação e segurança:**  
-  https://www.youtube.com/watch?v=Q4LQOfYwujk  
-  *Esse vídeo, feito pelos meus criadores, fala muito bem sobre os fundamentos da cibersegurança e autenticação.*
-
-- **Knex.js migrations e seeds:**  
-  https://www.youtube.com/watch?v=dXWy_aGCW1E  
-  *Se quiser revisar como criar migrations e seeds corretamente, esse vídeo é ótimo.*
-
-- **Estrutura MVC para Node.js:**  
-  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s  
-  *Para organizar melhor seu projeto e entender a arquitetura MVC.*
+  ```js
+  const allowedFields = ['id', 'nome', 'dataDeIncorporacao', 'cargo'];
+  const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+  if (extraFields.length > 0) {
+    return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+  }
+  ```
 
 ---
 
-## 📝 Resumo dos Principais Pontos para Melhorar
+### 5. **"CASES: Recebe status code 400 ao tentar criar caso com payload em formato incorreto"**
 
-- [ ] **Adicionar validações no registro de usuários** para nome, email (formato e existência), e senha (regras de complexidade).
-- [ ] **Corrigir o middleware de autenticação** para considerar token vindo do cookie e adicionar `req.user` após validação.
-- [ ] **Ajustar status codes e mensagens de erro** no login para usar 401 Unauthorized ao invés de 404 ou 400.
-- [ ] **Garantir que o arquivo `usuariosRoutes.js` existe e está implementado** com as rotas necessárias, incluindo exclusão de usuários.
-- [ ] **Implementar o endpoint `/usuarios/me`** para retornar dados do usuário autenticado (bônus que pode melhorar sua nota).
-- [ ] **Testar todos os casos de validação** para garantir que erros 400 são retornados quando os dados estão inválidos ou faltando.
+- **Análise:**  
+  No `createCaso`, você valida os campos obrigatórios e seus valores, mas não valida se o payload contém campos extras.
+
+- **Solução:**  
+  Mesma recomendação: faça validação estrita dos campos aceitos (`titulo`, `descricao`, `status`, `agente_id`).
 
 ---
 
-## Finalizando 🚀
+### 6. **"CASES: Recebe status code 404 ao tentar criar caso com ID de agente inexistente"**
 
-André, você está no caminho certo para construir uma API REST segura e robusta! Não desanime com os detalhes das validações — elas são fundamentais para proteger seu sistema e garantir uma boa experiência para os usuários.  
+- **Análise:**  
+  Seu código já verifica se o `agente_id` existe no banco, retornando 404 se não encontrar. Isso está correto.
 
-Continue focado nas boas práticas de segurança, validação e organização do código. Com as correções que sugeri, sua aplicação vai ficar ainda mais profissional e pronta para produção!  
+- **Possível motivo de falha:**  
+  Pode ser que o teste envie um `agente_id` inválido (não numérico) e seu código não trate isso antes da consulta.
 
-Se precisar de ajuda para implementar as validações ou ajustar o middleware, me chame aqui que te ajudo passo a passo! 👊
+- **Solução:**  
+  Valide se `agente_id` é um número válido antes de consultar:
 
-Boa codificação e até a próxima! 👨‍💻✨
-```
+  ```js
+  if (isNaN(Number(agente_id)) || Number(agente_id) <= 0) {
+    return next(new APIError(404, "Agente não encontrado"));
+  }
+  ```
 
+---
+
+### 7. **"AGENTS: Recebe status code 401 ao tentar acessar rotas sem token JWT"**
+
+- **Análise:**  
+  Seu middleware `authMiddleware` está buscando o token no header `Authorization` e também no cookie `token`. Isso está correto.
+
+- **Possível problema:**  
+  No trecho:
+
+  ```js
+  if(authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+  }
+  else if(cookieToken) {
+      token = cookieToken;
+  }
+  ```
+
+  Você não declarou a variável `token` com `let` ou `const`, o que pode causar erro de referência.
+
+- **Correção:**  
+  Declare `let token;` no início do middleware para evitar problemas:
+
+  ```js
+  const authMiddleware = (req, res, next) => {
+      let token;
+      const authHeader = req.headers["authorization"];
+      const cookieToken = req.cookies?.token;
+
+      if(authHeader && authHeader.startsWith("Bearer ")) {
+          token = authHeader.split(" ")[1];
+      }
+      else if(cookieToken) {
+          token = cookieToken;
+      }
+
+      if (!token) {
+          return next(new APIError(401, "Token necessary."));
+      }
+
+      jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
+          if (err) {
+              return next(new APIError(401, "Invalid token."));
+          }
+          req.user = decoded;
+          next();
+      });
+  }
+  ```
+
+---
+
+### 8. **Outras validações importantes**
+
+- Nos controllers de agentes e casos, seria interessante validar o formato dos IDs recebidos em todas as rotas que usam `:id` (GET, PUT, PATCH, DELETE). Isso evita consultas inválidas e melhora a robustez.
+
+- No seu `authController.login`, tem um pequeno erro de digitação na mensagem de erro para senha inválida:
+
+  ```js
+  if (!isPasswordValid) {
+      return next(new APIError(401, 'Invalid crendentials.')); // "crendentials" typo
+  }
+  ```
+
+  Corrija para `"Invalid credentials."`.
+
+---
+
+## Sobre a Estrutura de Diretórios
+
+Sua estrutura está muito próxima do esperado, parabéns! 👍
+
+- Você tem as pastas `controllers`, `repositories`, `routes`, `middlewares`, `utils`, `db` com migrations e seeds, e o arquivo `server.js` configurado corretamente.
+- O arquivo `.env` está sendo usado para variáveis sensíveis, como `JWT_SECRET`.
+- O middleware de autenticação está em `middlewares/authMiddleware.js`.
+- O controller de autenticação está em `controllers/authController.js`.
+- O repositório de usuários está em `repositories/usuariosRepository.js`.
+
+Tudo isso mostra que você entendeu bem a organização MVC e boas práticas.
+
+---
+
+## Recomendações de Aprendizado 📚
+
+Para aprimorar os pontos destacados, recomendo fortemente os seguintes vídeos que vão te ajudar a entender melhor:
+
+- Para reforçar a autenticação JWT e bcrypt, veja esse vídeo feito pelos meus criadores, que explica muito bem os conceitos básicos e fundamentais da cibersegurança:  
+  https://www.youtube.com/watch?v=Q4LQOfYwujk
+
+- Para entender o uso prático do JWT e resolver dúvidas sobre geração e verificação de tokens:  
+  https://www.youtube.com/watch?v=keS0JWOypIU
+
+- Para aprimorar o uso de bcrypt e JWT juntos, veja esse tutorial completo:  
+  https://www.youtube.com/watch?v=L04Ln97AwoY
+
+- Para entender melhor a estrutura MVC e organização do código em Node.js, que você já aplicou muito bem, mas pode refinar ainda mais:  
+  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
+
+---
+
+## Resumo dos Principais Pontos para Melhorar 📝
+
+- **Validação estrita dos campos no corpo das requisições:** rejeitar campos extras em endpoints de registro, criação e atualização de agentes e casos.
+- **Validar o formato dos IDs (parâmetros `:id`) antes de consultar o banco** para evitar erros e retornar 404 adequadamente.
+- **Declarar corretamente variáveis no middleware de autenticação (ex: `let token`)** para evitar erros silenciosos.
+- **Corrigir pequenos erros de digitação nas mensagens de erro** para manter profissionalismo e clareza.
+- **Adicionar validações extras para campos obrigatórios e formatos corretos, especialmente em rotas PUT e PATCH.**
+
+---
+
+andrelobo55, você está no caminho certo e já tem uma base muito sólida! 💪 Com esses ajustes, sua API vai ficar ainda mais robusta, segura e pronta para produção. A atenção aos detalhes na validação e no tratamento de erros é o que diferencia um projeto bom de um excelente. Continue assim, sempre aprendendo e aprimorando! 🚀✨
+
+Se precisar, volte nos vídeos que indiquei para consolidar os conceitos e, claro, conte comigo para ajudar a destravar qualquer dúvida.
+
+Um abraço e sucesso no código! 👊😄
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
