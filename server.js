@@ -6,13 +6,14 @@ const casosRoutes = require("./routes/casosRoutes");
 const authRoutes = require('./routes/authRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
 const setupSwagger = require('./docs/swagger');
-
+const cookieParser = require('cookie-parser');
 
 app.use(express.json());
 app.use("/agentes", agentesRoutes);
 app.use("/casos", casosRoutes);
 app.use("/auth", authRoutes);
 app.use("/usuarios", usuariosRoutes);
+app.use(cookieParser);
 setupSwagger(app);
 
 app.use((err, req, res, next) => {
