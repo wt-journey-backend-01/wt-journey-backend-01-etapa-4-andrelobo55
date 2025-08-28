@@ -109,10 +109,10 @@ const completeUpdateCaso = async (req, res, next) => {
         if (!agente_id) return next(new APIError(400, "Campo 'agente_id' deve ser preenchido"));
 
         const agenteExists = await agentesRepository.readById(agente_id);
-        if (!agenteExists) return next(new APIError(404, "Agente não encontrado"));
+        if (!agenteExists) return next(new APIError(404, "agente_id não encontrado"));
 
         if (isNaN(Number(agente_id)) || Number(agente_id) <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(404, "agente_id não encontrado"));
         }
 
         if (agente_id !== undefined && agente_id !== caso.agente_id) {
