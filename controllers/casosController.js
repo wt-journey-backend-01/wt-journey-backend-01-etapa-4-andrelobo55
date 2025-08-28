@@ -11,7 +11,7 @@ const getAllCasos = async (req, res, next) => {
 const getCasoById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        
+
         if (isNaN(Number(id))) {
             return next(new APIError(404, "Caso não encontrado"))
         }
@@ -115,6 +115,10 @@ const completeUpdateCaso = async (req, res, next) => {
             return next(new APIError(404, "Agente não encontrado"));
         }
 
+        if (campos.agente_id !== undefined && campos.agente_id !== caso.agente_id) {
+            return next(new APIError(400, "Campo 'agente_id' não deve ser alterado."));
+        }
+
         const casoAtualizado = await casosRepository.update(id, { titulo, descricao, status, agente_id });
 
         return res.status(200).json(casoAtualizado);
@@ -174,7 +178,7 @@ const deleteCaso = async (req, res, next) => {
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }
-        
+
         const caso = await casosRepository.readById(id);
 
         if (!caso) {
