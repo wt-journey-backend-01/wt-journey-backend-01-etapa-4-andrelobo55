@@ -19,7 +19,7 @@ const login = async (req, res, next) => {
         // body é a mesma que a que está armazenada no banco de dados
 
         if (!isPasswordValid) { // senão for a mesma, retorna erro
-            return next(new APIError(401, 'Invalid crendentials.'));
+            return next(new APIError(401, 'Invalid credentials.'));
         }
 
         const token = jwt.sign({ id: user.id, nome: user.nome, email: user.email }, SECRET,
@@ -48,7 +48,7 @@ const register = async (req, res, next) => {
         if (extraFields.length > 0) {
             return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
         }
-        
+
         const { nome, email, senha } = req.body;
 
         if (!nome || nome.trim() === '') {
