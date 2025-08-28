@@ -73,7 +73,7 @@ const completeUpdateCaso = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(400, "id inválido."));
         }
 
         const caso = await casosRepository.readById(id);
@@ -132,7 +132,7 @@ const updatePartialCaso = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(400, "id inválido."));
         }
 
         const caso = await casosRepository.readById(id);
@@ -176,7 +176,7 @@ const deleteCaso = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(400, "id inválido."));
         }
 
         const caso = await casosRepository.readById(id);

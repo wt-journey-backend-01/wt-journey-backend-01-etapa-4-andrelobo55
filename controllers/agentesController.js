@@ -13,7 +13,7 @@ const getAgenteById = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(400, "id inválido."));
         }
 
         const agente = await agentesRepository.readById(id);
@@ -69,7 +69,7 @@ const completeUpdateAgente = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(400, "id inválido."));
         }
 
         const agente = await agentesRepository.readById(id);
@@ -120,7 +120,7 @@ const updateCargoAgente = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(400, "id inválido."));
         }
 
         const agente = await agentesRepository.readById(id);
@@ -149,7 +149,7 @@ const deleteAgente = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(400, "id inválido."));
         }
         
         const agenteId = await agentesRepository.readById(id);
