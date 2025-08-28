@@ -5,16 +5,23 @@ const authMiddleware = (req, res, next) => {
     const authHeader = req.headers["authorization"]; // buscar o valor dentro do header do cabeçalho
     // da chave 'authorization'
     const cookieToken = req.cookies?.token;
-    const headerToken = authHeader || cookieToken;
-    const token = authHeader && authHeader.split(" ")[1]; // o token não pode ser undefined. Então, se
-    // o token existir e a remoção do espaço do valor do token ocorrer, a atribuição é feita
+
+    if(authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+    }
+    else if(cookieToken) {
+        token = cookieToken;
+    }
+
     if (!token) {
         return next(new APIError(401, "Token necessary."));
     }
-    jwt.verify(token, process.env.JWT_SECRET || 'secret', (err) => {
+
+    jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
         if (err) {
-            return next(new APIError(400, "Invalid token."));
+            return next(new APIError(401, "Invalid token."));
         }
+        req.user = decoded; // importante para acessar dados do usuário em rotas protegidas
         next();
     });
 }
