@@ -68,13 +68,13 @@ const register = async (req, res, next) => {
             return next(new APIError(400, "Senha deve ter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais."));
         }
 
-        const user = await usuariosRepository.readByEmail(email); // recebe um usuário a partir do
-        // email enviado pelo body
-
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return next(new APIError(400, "Email inválido"));
         }
+
+        const user = await usuariosRepository.readByEmail(email); // recebe um usuário a partir do
+        // email enviado pelo body
 
         if (user) { // verifica se o email existe
             return next(new APIError(400, 'Email already exists.'));
