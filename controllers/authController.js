@@ -88,27 +88,10 @@ const register = async (req, res, next) => {
     }
 }
 
-const deleteUser = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const user = await usuariosRepository.readById(id);
-
-        if (!user) {
-            return next(new APIError(404, 'User not found.'));
-        }
-
-        await usuariosRepository.remove(id);
-
-        res.status(204).send();
-    } catch (error) {
-        return next(new APIError(500, 'Error in deleting user.'));
-    }
-}
-
 const logout = (req, res, next) => {
         res.clearCookie('token', { path: '/' });
 
         return res.status(200).json({ status: 200, message: 'Logout successfully.' });
 }
 
-module.exports = { login, register, deleteUser, logout };
+module.exports = { login, register, logout };
