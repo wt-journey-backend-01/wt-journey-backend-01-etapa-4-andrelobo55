@@ -47,6 +47,11 @@ const createAgente = async (req, res, next) => {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' deve ser preenchido"));
         }
 
+        const dataIncorpDate = new Date(dataDeIncorporacao);
+        if (isNaN(dataIncorpDate.getTime())) {
+            return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido."));
+        }
+
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido ou no futuro"));
         }
@@ -55,7 +60,7 @@ const createAgente = async (req, res, next) => {
             return next(new APIError(400, "Campo 'cargo' deve ser preenchido"));
         }
 
-        const agente = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+        const agente = await agentesRepository.create({ nome, dataDeIncorporacao: dataIncorpDate, cargo });
 
         res.status(201).json(agente);
     }
@@ -83,7 +88,7 @@ const completeUpdateAgente = async (req, res, next) => {
         if (extraFields.length > 0) {
             return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
         }
-        
+
         const { id: idBody, nome, dataDeIncorporacao, cargo } = req.body;
 
         if (idBody && idBody !== id) {
@@ -151,7 +156,7 @@ const deleteAgente = async (req, res, next) => {
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado."));
         }
-        
+
         const agenteId = await agentesRepository.readById(id);
 
         if (!agenteId) {
