@@ -34,7 +34,7 @@ const login = async (req, res, next) => {
             path: '/'
         });
 
-        res.status(200).json({ message: 'User logged in successfully', access_token: token });
+        res.status(200).json({ access_token: token });
     } catch (error) {
         console.log(error);
         return next(new APIError(500, 'Error logging in'));
