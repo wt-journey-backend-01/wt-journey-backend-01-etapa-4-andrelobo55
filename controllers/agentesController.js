@@ -51,6 +51,7 @@ const createAgente = async (req, res, next) => {
         if (isNaN(dataIncorpDate.getTime())) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido."));
         }
+        const formattedDate = dataIncorpDate.toISOString().split('T')[0]; // extrai só a data
 
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido ou no futuro"));
@@ -60,7 +61,7 @@ const createAgente = async (req, res, next) => {
             return next(new APIError(400, "Campo 'cargo' deve ser preenchido"));
         }
 
-        const agente = await agentesRepository.create({ nome, dataDeIncorporacao: dataIncorpDate, cargo });
+        const agente = await agentesRepository.create({ nome, dataDeIncorporacao: formattedDate, cargo });
 
         res.status(201).json(agente);
     }
@@ -107,7 +108,8 @@ const completeUpdateAgente = async (req, res, next) => {
         if (isNaN(dataIncorpDate.getTime())) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido."));
         }
-        
+        const formattedDate = dataIncorpDate.toISOString().split('T')[0]; // extrai só a data
+
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido ou no futuro."));
         }
@@ -116,7 +118,7 @@ const completeUpdateAgente = async (req, res, next) => {
             return next(new APIError(400, "Campo 'cargo' deve ser preenchido"));
         }
 
-        const agenteAtualizado = await agentesRepository.update(id, { nome, dataDeIncorporacao, cargo });
+        const agenteAtualizado = await agentesRepository.update(id, { nome, dataDeIncorporacao: formattedDate, cargo });
 
         return res.status(200).json(agenteAtualizado);
     }
