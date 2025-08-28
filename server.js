@@ -13,7 +13,7 @@ app.use("/agentes", agentesRoutes);
 app.use("/casos", casosRoutes);
 app.use("/auth", authRoutes);
 app.use("/usuarios", usuariosRoutes);
-app.use(cookieParser);
+app.use(cookieParser());
 setupSwagger(app);
 
 app.use((err, req, res, next) => {
