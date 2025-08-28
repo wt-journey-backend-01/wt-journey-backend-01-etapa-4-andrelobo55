@@ -1,265 +1,321 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 8 créditos restantes para usar o sistema de feedback AI.
+Você tem 7 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para andrelobo55:
 
-Nota final: **52.5/100**
+Nota final: **60.2/100**
 
-Olá, andrelobo55! 👋🎉 Que jornada incrível você fez até aqui com essa API REST em Node.js, Express e PostgreSQL! Quero começar parabenizando você por várias coisas que estão muito bem feitas no seu projeto:
+Olá, andrelobo55! 👋🚀
 
-- Você estruturou muito bem a API, com controllers, repositories, middlewares e rotas bem separados — isso é essencial para um código limpo e escalável.
-- A autenticação via JWT está funcionando, e você já implementou registro, login, logout e exclusão de usuários com as respostas corretas e tratamento de erros.
-- O middleware de autenticação está protegendo as rotas de agentes e casos, garantindo segurança.
-- O uso do bcrypt para hashing das senhas está correto, assim como a validação da força da senha no registro.
-- Você documentou muito bem no INSTRUCTIONS.md o fluxo de autenticação e uso do token JWT.
-- Os testes base importantes de criação, login, logout e exclusão de usuários passaram, o que é um ótimo sinal! 👏
-
-Além disso, parabéns por conseguir avançar em alguns bônus, como o endpoint `/usuarios/me` e alguns filtros básicos (mesmo que alguns testes bônus tenham falhado).
-
-Agora, vamos conversar sobre os pontos onde a nota foi impactada, para você destravar de vez e garantir que sua API esteja 100% pronta para produção! 🚀
+Primeiro, parabéns pelo esforço e pelo que você já conseguiu entregar! 🎉 Você implementou com sucesso o cadastro, login, logout e exclusão de usuários, além de garantir uma boa validação das senhas e emails. Isso é fundamental para a segurança da aplicação, e você fez um ótimo trabalho! Além disso, o uso correto do JWT e o middleware de autenticação para proteger as rotas principais já estão funcionando, o que mostra que você entendeu bem os conceitos essenciais de autenticação. 👏👏
 
 ---
 
-## Análise dos Testes que Falharam e Causas Raiz
+## 🎯 O que deu certo — Suas vitórias
 
-### 1. **"USERS: Recebe erro 400 ao tentar criar um usuário com campo extra"**
+- **Cadastro de usuário** com validação rigorosa de senha e email.
+- **Login** funcionando com geração de JWT válido e envio via cookie e JSON.
+- **Logout** limpando o cookie corretamente.
+- **Middleware de autenticação** que protege as rotas de agentes e casos.
+- **Exclusão de usuário** funcionando com status 204.
+- **Boas mensagens de erro** e uso correto do middleware para erros personalizados.
+- Documentação no **INSTRUCTIONS.md** clara e com exemplos de uso do JWT.
+- Estrutura de diretórios está bem próxima do esperado, com separação clara entre controllers, repositories, middlewares e rotas.
 
-- **O que o teste espera?**  
-  Que seu endpoint de registro rejeite payloads que contenham campos extras além de `nome`, `email` e `senha`. Por exemplo, se o usuário enviar `{ nome, email, senha, idade }`, deve retornar 400.
-
-- **O que acontece no seu código?**  
-  No seu `authController.register`, você valida os campos obrigatórios e o formato da senha e email, mas não faz validação para rejeitar campos extras no corpo da requisição.
-
-- **Por que isso é importante?**  
-  Permitir campos extras pode abrir brechas de segurança e inconsistência nos dados. Além disso, o teste exige esse comportamento para garantir robustez.
-
-- **Como corrigir?**  
-  Você pode fazer uma checagem simples para validar se o objeto `req.body` contém apenas as chaves esperadas. Exemplo:
-
-  ```js
-  const allowedFields = ['nome', 'email', 'senha'];
-  const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
-  if (extraFields.length > 0) {
-    return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
-  }
-  ```
-
-  Coloque isso logo no início do seu método `register`.
+Além disso, você tentou implementar funcionalidades bônus como o endpoint `/usuarios/me` e filtros para casos e agentes, o que mostra que está buscando ir além! 🌟
 
 ---
 
-### 2. **"AGENTS: Recebe status code 400 ao tentar criar agente com payload em formato incorreto"**
+## ⚠️ Onde podemos melhorar: análise dos testes que falharam
 
-- **Análise:**  
-  Seu controller de agentes (`createAgente`) já valida os campos obrigatórios (`nome`, `dataDeIncorporacao`, `cargo`) e chama `next` com erro 400 em caso de ausência ou formato inválido. Isso está correto.
-
-- **Possível motivo da falha:**  
-  O teste provavelmente envia payloads com campos extras ou formato errado. Assim como no registro de usuário, você não está validando se o payload contém somente os campos esperados.
-
-- **Recomendação:**  
-  Faça validação estrita no corpo da requisição para agentes, rejeitando campos extras. Exemplo:
-
-  ```js
-  const allowedFields = ['nome', 'dataDeIncorporacao', 'cargo'];
-  const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
-  if (extraFields.length > 0) {
-    return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
-  }
-  ```
-
-  Isso ajuda a garantir que só os campos esperados sejam aceitos.
+Você teve falhas em muitos testes relacionados à manipulação dos **agentes** e **casos**, principalmente nas operações de CRUD e nas validações dos IDs e payloads. Vamos destrinchar os pontos principais, com trechos do seu código para ajudar na compreensão.
 
 ---
 
-### 3. **"AGENTS: Recebe status 404 ao tentar buscar um agente com ID em formato inválido"**
+### 1. Falhas recorrentes na validação do ID em agentes e casos
 
-- **Análise:**  
-  No `agentesController.getAgenteById`, você não faz validação explícita do formato do ID (por exemplo, se é um número válido). Você apenas chama `readById` e, se não encontrar, retorna 404.
+Nos seus controllers de agentes e casos, você tenta validar o parâmetro `id` para garantir que seja um número válido e positivo. Porém, em vários métodos, você usa a variável `idNum` sem declará-la antes. Por exemplo, no `agentesController.js`, no método `completeUpdateAgente`:
 
-- **Por que isso é um problema?**  
-  Se o ID é uma string que não pode ser convertida para número, a consulta pode falhar ou retornar resultados inesperados.
+```js
+const completeUpdateAgente = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (isNaN(idNum) || idNum <= 0) {  // <-- idNum não definido aqui
+            return next(new APIError(404, "Agente não encontrado"));
+        }
+        // ...
+    } catch (error) {
+        next(error);
+    }
+}
+```
 
-- **Como melhorar?**  
-  Antes de buscar no banco, valide se o `id` é um número inteiro positivo:
+O mesmo erro acontece em métodos como `updateCargoAgente`, `deleteAgente`, e também em vários métodos do `casosController.js`.
 
-  ```js
-  const idNum = Number(id);
-  if (isNaN(idNum) || idNum <= 0) {
+**Por que isso acontece?**  
+Você está tentando validar `idNum` sem nunca fazer algo como:
+
+```js
+const idNum = Number(id);
+```
+
+Isso faz com que `idNum` seja `undefined` e a validação falhe silenciosamente ou cause erro, resultando em comportamentos inesperados e falhas nos testes que esperam um tratamento correto de IDs inválidos.
+
+**Como corrigir?**  
+Em todos os métodos onde você valida o ID, faça a conversão explícita antes da validação:
+
+```js
+const idNum = Number(id);
+if (isNaN(idNum) || idNum <= 0) {
     return next(new APIError(404, "Agente não encontrado"));
-  }
-  ```
-
-  Isso evita consultas inválidas e responde corretamente ao cliente.
+}
+```
 
 ---
 
-### 4. **"AGENTS: Recebe status code 400 ao tentar atualizar agente por completo com método PUT com payload em formato incorreto"**
+### 2. Mensagens de erro e status codes inconsistentes
 
-- **Análise:**  
-  No método `completeUpdateAgente`, você valida os campos obrigatórios, mas não valida se o payload contém campos extras.
+Você está retornando mensagens de erro apropriadas, mas algumas vezes o status code ou a mensagem não correspondem exatamente ao esperado nos testes. Por exemplo, no login, você retorna:
 
-- **Por que isso importa?**  
-  Assim como nos casos anteriores, o teste espera que você rejeite payloads com campos inesperados.
+```js
+return next(new APIError(401, 'Invalid credentials.'));
+```
 
-- **Como corrigir?**  
-  Adicione validação para aceitar somente os campos `nome`, `dataDeIncorporacao`, `cargo` e opcionalmente `id` (que não pode ser alterado). Se encontrar campos extras, retorne erro 400.
+O que está ótimo, mas no registro, para email já existente, você retorna:
 
-  Exemplo:
+```js
+return next(new APIError(400, 'Email already exists.'));
+```
 
-  ```js
-  const allowedFields = ['id', 'nome', 'dataDeIncorporacao', 'cargo'];
-  const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
-  if (extraFields.length > 0) {
-    return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
-  }
-  ```
+Que está correto. Apenas fique atento para sempre usar os códigos e mensagens conforme o esperado no enunciado, pois isso impacta diretamente nos testes automáticos.
 
 ---
 
-### 5. **"CASES: Recebe status code 400 ao tentar criar caso com payload em formato incorreto"**
+### 3. Validação de campos extras e faltantes
 
-- **Análise:**  
-  No `createCaso`, você valida os campos obrigatórios e seus valores, mas não valida se o payload contém campos extras.
+Você fez um bom trabalho ao validar campos extras e faltantes em vários controllers. Porém, no `completeUpdateAgente` e `completeUpdateCaso`, você inclui o campo `'id'` como permitido no corpo da requisição:
 
-- **Solução:**  
-  Mesma recomendação: faça validação estrita dos campos aceitos (`titulo`, `descricao`, `status`, `agente_id`).
+```js
+const allowedFields = ['id', 'nome', 'dataDeIncorporacao', 'cargo'];
+```
+
+Mas depois, você não permite alteração do campo `id`:
+
+```js
+if (idBody && idBody !== id) {
+    return next(new APIError(400, "Não é permitido alterar o campo 'id'"));
+}
+```
+
+Essa lógica está correta, porém pode confundir a validação de campos extras, já que o `id` não deveria ser permitido no corpo para atualização, apenas para comparação. O ideal é **não incluir** `'id'` em `allowedFields` e tratar a presença dele como erro, ou então deixar claro que ele é permitido mas não pode ser alterado.
 
 ---
 
-### 6. **"CASES: Recebe status code 404 ao tentar criar caso com ID de agente inexistente"**
+### 4. Validação do campo `agente_id` no controller de casos
 
-- **Análise:**  
-  Seu código já verifica se o `agente_id` existe no banco, retornando 404 se não encontrar. Isso está correto.
+No método `updatePartialCaso`, você verifica se o campo `agente_id` está sendo alterado e retorna erro:
 
-- **Possível motivo de falha:**  
-  Pode ser que o teste envie um `agente_id` inválido (não numérico) e seu código não trate isso antes da consulta.
+```js
+if (campos.agente_id !== undefined && campos.agente_id !== caso.agente_id) {
+    return next(new APIError(400, "Campo 'agente_id' não deve ser alterado."));
+}
+```
 
-- **Solução:**  
-  Valide se `agente_id` é um número válido antes de consultar:
+Isso está correto, pois o enunciado pede que o campo `agente_id` não seja alterado em PATCH. Mas no método `completeUpdateCaso` (PUT), você não faz a mesma validação para garantir que o `agente_id` seja válido e existente antes de atualizar. Você só verifica se o agente existe, mas não trata se o `agente_id` é um número válido:
 
-  ```js
-  if (isNaN(Number(agente_id)) || Number(agente_id) <= 0) {
+```js
+if (!agente_id) return next(new APIError(400, "Campo 'agente_id' deve ser preenchido"));
+
+const agenteExists = await agentesRepository.readById(agente_id);
+if (!agenteExists) return next(new APIError(404, "Agente não encontrado"));
+
+if (isNaN(Number(agente_id)) || Number(agente_id) <= 0) {
     return next(new APIError(404, "Agente não encontrado"));
-  }
-  ```
+}
+```
+
+Aqui a ordem das validações pode causar problemas: você primeiro acessa o banco para verificar o agente, mas só depois valida se o `agente_id` é um número válido. Isso pode gerar erros inesperados. O ideal é validar o formato do `agente_id` antes de consultar o banco.
 
 ---
 
-### 7. **"AGENTS: Recebe status code 401 ao tentar acessar rotas sem token JWT"**
+### 5. Migration de agentes incompleta no arquivo `20250810061942_create_agentes.js`
 
-- **Análise:**  
-  Seu middleware `authMiddleware` está buscando o token no header `Authorization` e também no cookie `token`. Isso está correto.
+No seu arquivo de migration para agentes, você tem um trecho duplicado e um `exports.up` vazio no começo:
 
-- **Possível problema:**  
-  No trecho:
+```js
+exports.up = function(knex) {
+  
+};
+```
 
-  ```js
-  if(authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
-  }
-  else if(cookieToken) {
-      token = cookieToken;
-  }
-  ```
+E logo depois, outro `exports.up` com a criação da tabela:
 
-  Você não declarou a variável `token` com `let` ou `const`, o que pode causar erro de referência.
+```js
+exports.up = function(knex) {
+  return knex.schema.createTable('agentes', function(table) {
+    table.increments('id').primary();
+    table.string('nome').notNullable();
+    table.date('dataDeIncorporacao').notNullable();
+    table.string('cargo').notNullable();
+  })
+};
+```
 
-- **Correção:**  
-  Declare `let token;` no início do middleware para evitar problemas:
+**Por que isso é um problema?**  
+O primeiro `exports.up` vazio sobrescreve o segundo, fazendo com que a migration não crie a tabela `agentes`. Isso pode causar falhas nos testes que esperam a tabela pronta e populada.
 
-  ```js
-  const authMiddleware = (req, res, next) => {
-      let token;
-      const authHeader = req.headers["authorization"];
-      const cookieToken = req.cookies?.token;
+**Como corrigir?**  
+Remova o primeiro `exports.up` vazio, deixando apenas o correto:
 
-      if(authHeader && authHeader.startsWith("Bearer ")) {
-          token = authHeader.split(" ")[1];
-      }
-      else if(cookieToken) {
-          token = cookieToken;
-      }
-
-      if (!token) {
-          return next(new APIError(401, "Token necessary."));
-      }
-
-      jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
-          if (err) {
-              return next(new APIError(401, "Invalid token."));
-          }
-          req.user = decoded;
-          next();
-      });
-  }
-  ```
+```js
+exports.up = function(knex) {
+  return knex.schema.createTable('agentes', function(table) {
+    table.increments('id').primary();
+    table.string('nome').notNullable();
+    table.date('dataDeIncorporacao').notNullable();
+    table.string('cargo').notNullable();
+  });
+};
+```
 
 ---
 
-### 8. **Outras validações importantes**
+### 6. Falta de importação do middleware `cookie-parser`
 
-- Nos controllers de agentes e casos, seria interessante validar o formato dos IDs recebidos em todas as rotas que usam `:id` (GET, PUT, PATCH, DELETE). Isso evita consultas inválidas e melhora a robustez.
+No seu middleware `authMiddleware.js`, você tenta ler o token do cookie:
 
-- No seu `authController.login`, tem um pequeno erro de digitação na mensagem de erro para senha inválida:
+```js
+const cookieToken = req.cookies?.token;
+```
 
-  ```js
-  if (!isPasswordValid) {
-      return next(new APIError(401, 'Invalid crendentials.')); // "crendentials" typo
-  }
-  ```
+Mas no seu `server.js`, não há nenhuma linha que importe e use o `cookie-parser`, que é necessário para que `req.cookies` funcione. Isso pode fazer com que o token do cookie nunca seja lido, causando falha na autenticação via cookie.
 
-  Corrija para `"Invalid credentials."`.
+**Como corrigir?**
+
+1. Instale o pacote `cookie-parser`:
+
+```bash
+npm install cookie-parser
+```
+
+2. Importe e use no `server.js`:
+
+```js
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+```
+
+Assim, seu middleware poderá acessar os cookies corretamente.
 
 ---
 
-## Sobre a Estrutura de Diretórios
+### 7. Pequenos ajustes na resposta do login e registro
 
-Sua estrutura está muito próxima do esperado, parabéns! 👍
+No seu `authController.js`, no método `login`, você retorna:
 
-- Você tem as pastas `controllers`, `repositories`, `routes`, `middlewares`, `utils`, `db` com migrations e seeds, e o arquivo `server.js` configurado corretamente.
-- O arquivo `.env` está sendo usado para variáveis sensíveis, como `JWT_SECRET`.
-- O middleware de autenticação está em `middlewares/authMiddleware.js`.
-- O controller de autenticação está em `controllers/authController.js`.
-- O repositório de usuários está em `repositories/usuariosRepository.js`.
+```js
+res.status(200).json({ message: 'User logged in successfully', access_token: token });
+```
 
-Tudo isso mostra que você entendeu bem a organização MVC e boas práticas.
+Mas o enunciado pede que a resposta seja apenas:
+
+```json
+{
+  "access_token": "token aqui"
+}
+```
+
+Sem a mensagem adicional. Embora isso não quebre a aplicação, pode causar falha nos testes automáticos que esperam o formato exato.
+
+No método `register`, você retorna:
+
+```js
+res.status(201).json({ message: 'User created successfully', user: safeUser });
+```
+
+O enunciado pede que retorne apenas o usuário criado, sem mensagem extra:
+
+```json
+{
+  "id": 1,
+  "nome": "André",
+  "email": "andre@gmail.com"
+}
+```
+
+**Como corrigir?**
+
+No `login`:
+
+```js
+res.status(200).json({ access_token: token });
+```
+
+No `register`:
+
+```js
+res.status(201).json(safeUser);
+```
 
 ---
 
-## Recomendações de Aprendizado 📚
+### 8. Ausência do arquivo `usuariosRoutes.js`
 
-Para aprimorar os pontos destacados, recomendo fortemente os seguintes vídeos que vão te ajudar a entender melhor:
+No seu `server.js` você importa e usa:
 
-- Para reforçar a autenticação JWT e bcrypt, veja esse vídeo feito pelos meus criadores, que explica muito bem os conceitos básicos e fundamentais da cibersegurança:  
-  https://www.youtube.com/watch?v=Q4LQOfYwujk
+```js
+const usuariosRoutes = require('./routes/usuariosRoutes');
+app.use("/usuarios", usuariosRoutes);
+```
 
-- Para entender o uso prático do JWT e resolver dúvidas sobre geração e verificação de tokens:  
-  https://www.youtube.com/watch?v=keS0JWOypIU
+Porém, você não enviou o conteúdo do arquivo `routes/usuariosRoutes.js`. Se ele não existir ou não estiver configurado corretamente, isso pode causar erro 404 ou falha na aplicação.
 
-- Para aprimorar o uso de bcrypt e JWT juntos, veja esse tutorial completo:  
-  https://www.youtube.com/watch?v=L04Ln97AwoY
+Verifique se o arquivo existe e exporta um router válido.
 
-- Para entender melhor a estrutura MVC e organização do código em Node.js, que você já aplicou muito bem, mas pode refinar ainda mais:  
+---
+
+## 📚 Recursos recomendados para você
+
+- Para corrigir e entender melhor a criação e organização das migrations e seeds, veja este vídeo super didático:  
+  https://www.youtube.com/watch?v=dXWy_aGCW1E  
+  (Documentação oficial do Knex.js sobre migrations)
+
+- Para entender melhor a arquitetura MVC e organização do projeto, recomendo:  
   https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
 
+- Sobre autenticação e segurança com JWT e bcrypt, este vídeo feito pelos meus criadores é essencial:  
+  https://www.youtube.com/watch?v=Q4LQOfYwujk
+
+- Para entender em detalhes o uso do JWT em Node.js:  
+  https://www.youtube.com/watch?v=keS0JWOypIU
+
+- Para aprender a usar bcrypt e JWT juntos, veja também:  
+  https://www.youtube.com/watch?v=L04Ln97AwoY
+
+- Para garantir que os cookies sejam lidos corretamente, aprenda sobre o middleware `cookie-parser`:  
+  https://www.npmjs.com/package/cookie-parser
+
 ---
 
-## Resumo dos Principais Pontos para Melhorar 📝
+## 📝 Resumo rápido dos principais pontos para você focar:
 
-- **Validação estrita dos campos no corpo das requisições:** rejeitar campos extras em endpoints de registro, criação e atualização de agentes e casos.
-- **Validar o formato dos IDs (parâmetros `:id`) antes de consultar o banco** para evitar erros e retornar 404 adequadamente.
-- **Declarar corretamente variáveis no middleware de autenticação (ex: `let token`)** para evitar erros silenciosos.
-- **Corrigir pequenos erros de digitação nas mensagens de erro** para manter profissionalismo e clareza.
-- **Adicionar validações extras para campos obrigatórios e formatos corretos, especialmente em rotas PUT e PATCH.**
+- Corrija a validação de IDs nos controllers, declarando `idNum` a partir de `id` antes de validar.
+- Remova o `exports.up` vazio da migration de agentes para garantir que a tabela seja criada.
+- Ajuste o formato das respostas do login e registro para corresponder ao esperado nos testes (remova mensagens extras).
+- Importe e use o middleware `cookie-parser` no `server.js` para que o token do cookie seja lido corretamente.
+- Reveja a validação dos campos permitidos no corpo das requisições para PUT/PATCH, especialmente o campo `id`.
+- Garanta que o arquivo `usuariosRoutes.js` exista e esteja corretamente implementado.
+- Valide o formato de `agente_id` antes de consultar o banco para evitar consultas desnecessárias.
+- Mantenha atenção nas mensagens e códigos de status para que correspondam exatamente ao esperado no enunciado.
 
 ---
 
-andrelobo55, você está no caminho certo e já tem uma base muito sólida! 💪 Com esses ajustes, sua API vai ficar ainda mais robusta, segura e pronta para produção. A atenção aos detalhes na validação e no tratamento de erros é o que diferencia um projeto bom de um excelente. Continue assim, sempre aprendendo e aprimorando! 🚀✨
+andrelobo55, você está no caminho certo, com conceitos sólidos e uma boa organização! 💪✨ Corrigindo esses detalhes, sua API vai ficar completa e robusta, pronta para uso profissional. Continue firme, revisando cada ponto com calma e testando passo a passo.
 
-Se precisar, volte nos vídeos que indiquei para consolidar os conceitos e, claro, conte comigo para ajudar a destravar qualquer dúvida.
+Se precisar, volte aos vídeos recomendados para reforçar os conceitos. Estou aqui torcendo pelo seu sucesso! 🚀🔥
 
-Um abraço e sucesso no código! 👊😄
+Um abraço e até a próxima revisão! 👋😊
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
