@@ -78,7 +78,7 @@ const completeUpdateAgente = async (req, res, next) => {
             return next(new APIError(404, "Agente não encontrado"));
         }
 
-        const allowedFields = ['id', 'nome', 'dataDeIncorporacao', 'cargo'];
+        const allowedFields = ['nome', 'dataDeIncorporacao', 'cargo'];
         const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
         if (extraFields.length > 0) {
             return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
