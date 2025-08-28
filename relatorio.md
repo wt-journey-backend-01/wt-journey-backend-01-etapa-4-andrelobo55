@@ -1,251 +1,266 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 6 créditos restantes para usar o sistema de feedback AI.
+Você tem 5 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para andrelobo55:
 
-Nota final: **75.7/100**
+Nota final: **85.1/100**
 
-Olá, André! 👋🚀
+Olá, andrelobo55! 👋🚀
 
-Primeiramente, parabéns pelo esforço e pelo progresso que você já fez até aqui! 🎉 Você conseguiu implementar com sucesso toda a parte de usuários, incluindo registro, login, logout e exclusão, com validações rígidas e segurança — isso é fantástico! Além disso, os testes bônus que você passou mostram que você foi além do básico, implementando filtros e endpoints extras, o que é super valioso para seu aprendizado e para um projeto profissional. 👏👏
-
-Agora, vamos juntos analisar os pontos que ainda precisam de atenção para destravar 100% do seu projeto e garantir que sua API esteja sólida, segura e funcionando conforme o esperado. Bora lá! 🕵️‍♂️🔍
+Antes de tudo, parabéns pelo esforço e pela entrega do projeto! Você conseguiu implementar uma base sólida de autenticação com JWT, hashing de senha com bcrypt, além de proteger rotas importantes. 🎉 Isso já mostra que você domina conceitos essenciais de segurança e organização em Node.js com Express e PostgreSQL.
 
 ---
 
-## 🚩 Testes que Falharam e Causas Raiz
+### 🎯 Pontos Fortes e Conquistas Bônus
 
-Aqui está a lista dos testes base que falharam:
-
-- AGENTS: Criação, listagem, busca, atualização (PUT e PATCH), exclusão, e erros de autorização e payload incorreto.
-- CASES: Criação, listagem, busca, atualização (PUT e PATCH), exclusão, e erros de ID inválido ou payload incorreto.
-
-### Análise Geral: Por que os testes de Agentes e Casos estão falhando?
-
-Os testes relacionados a **agentes** e **casos** falharam em operações básicas de CRUD e também em validações e autenticação. Isso indica que, apesar da autenticação funcionar bem para usuários, o problema está na camada de agentes e casos, provavelmente:
-
-- **Middleware de autenticação não está protegendo corretamente as rotas**, ou o token não está sendo passado ou validado corretamente nas requisições de agentes e casos.
-- **Validações de payload e tratamento de erros nessas rotas estão incompletos ou inconsistentes**, especialmente para atualizações via PUT e PATCH.
-- Possível **problema na estrutura ou no uso incorreto dos parâmetros**, como IDs inválidos ou tipos incorretos.
-- Alguns detalhes na lógica das controllers podem estar causando respostas erradas, como status codes incorretos ou mensagens que não batem com o esperado.
-
-Vamos destrinchar os principais pontos com exemplos do seu código para você entender melhor.
+- Você implementou corretamente o registro, login e logout de usuários com JWT e bcrypt, e os testes base de usuários passaram com sucesso, incluindo validações rigorosas de senha e e-mail.
+- A arquitetura do projeto está muito bem organizada, seguindo o padrão MVC com controllers, repositories, middlewares e rotas separadas.
+- O middleware de autenticação (`authMiddleware.js`) está bem implementado, suportando token via header e cookie.
+- O arquivo `INSTRUCTIONS.md` está claro e bem documentado, explicando o fluxo de autenticação e uso do token JWT.
+- Você também implementou alguns bônus, como o endpoint `/usuarios/me` e filtragens em casos e agentes — mesmo que alguns testes bônus tenham falhado, é muito positivo que tenha tentado ir além!
 
 ---
 
-## 1. Middleware de Autenticação e Proteção das Rotas
+### 🚨 Análise dos Testes que Falharam e Pontos para Melhorar
 
-Você aplicou o middleware `authMiddleware` nas rotas de agentes e casos, o que é correto:
+Os testes que falharam são principalmente relacionados a **agentes** e **casos**, especialmente nos seguintes aspectos:
 
-```js
-router.get("/", authMiddleware, agentesController.getAllAgentes);
-```
+- Criação de agentes (`POST /agentes`) com status 201 e dados corretos
+- Listagem de agentes (`GET /agentes`) protegida e com dados corretos
+- Atualização completa de agentes via PUT
+- Respostas 404 para IDs inválidos em agentes e casos
+- Status 401 para acesso sem token JWT em rotas protegidas de agentes
+- Deleção de agentes com ID inválido
+- Status 404 para buscas, atualizações e deleções de casos com IDs inválidos
 
-E no middleware:
-
-```js
-const authMiddleware = (req, res, next) => {
-    let token = null;
-    const authHeader = req.headers["authorization"];
-    const cookieToken = req.cookies?.token;
-
-    if(authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-    }
-    else if(cookieToken) {
-        token = cookieToken;
-    }
-
-    if (!token) {
-        return next(new APIError(401, "Token necessary."));
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
-        if (err) {
-            return next(new APIError(401, "Invalid token."));
-        }
-        req.user = decoded;
-        next();
-    });
-}
-```
-
-**Possível causa de falha:**  
-Se o cliente (testes automáticos) não está enviando o token no header `Authorization` como `Bearer <token>`, ou se o token está inválido, a requisição será bloqueada com 401, o que é esperado.  
-
-**Mas se o teste espera que o token seja enviado e validado com sucesso, e isso não acontece, pode ser que:**
-
-- O token JWT esteja expirado ou mal gerado.
-- A variável de ambiente `JWT_SECRET` esteja diferente entre o login e a verificação.
-- O token não esteja sendo enviado corretamente no header nas requisições de agentes e casos no seu ambiente de testes.
-
-**Dica:** Garanta que o token gerado no login seja o mesmo esperado no middleware e que o teste esteja enviando o token corretamente no header.  
+Vamos destrinchar as causas raiz para esses problemas:
 
 ---
 
-## 2. Validações e Respostas nas Controllers de Agentes e Casos
+### 1. **Falha na Criação e Listagem de Agentes (Status 201 e 200) e Atualização Completa (PUT)**
 
-### Exemplo de problema na controller de casos (completeUpdateCaso):
+**Sintomas:**  
+- Testes esperam que ao criar um agente, o status seja 201 e o objeto retornado contenha os dados corretos e o ID gerado.  
+- Ao listar agentes, espera-se status 200 e a lista completa.  
+- Atualização via PUT deve retornar status 200 e o agente atualizado.
 
-Veja este trecho que está confuso e pode causar erro:
+**Causa provável:**  
+Seu código do `agentesController.js` está correto em lógica, porém, a falha pode estar relacionada ao uso do middleware de autenticação nas rotas de agentes. Se o token JWT não estiver sendo enviado corretamente, o acesso será bloqueado com 401, causando falha nos testes.
+
+**Detalhe importante:**  
+No seu `server.js`, você tem:
 
 ```js
-if (campos.agente_id !== undefined && campos.agente_id !== caso.agente_id) {
-    return next(new APIError(400, "Campo 'agente_id' não deve ser alterado."));
+app.use(cookieParser());
+app.use("/agentes", agentesRoutes);
+```
+
+Porém, o middleware `authMiddleware` está aplicado nas rotas de agentes, e o token pode estar sendo enviado via header **ou** cookie. Certifique-se que os testes estão enviando o token no header `Authorization` como `Bearer <token>`.
+
+Além disso, verifique se o token gerado no login está usando a mesma `JWT_SECRET` que está no ambiente de testes. No seu código, você tem:
+
+```js
+const SECRET = process.env.JWT_SECRET || 'secret';
+```
+
+Se a variável de ambiente não estiver configurada corretamente, o token pode ser gerado com um segredo diferente do esperado, invalidando o token para as rotas protegidas.
+
+**Sugestão:**  
+- Garanta que o `.env` contenha a variável `JWT_SECRET` com o valor correto e que o ambiente de execução a carregue (você está usando `dotenv`? Não vi no `server.js`).
+- No `server.js`, adicione no topo:
+
+```js
+require('dotenv').config();
+```
+
+para garantir que as variáveis de ambiente sejam carregadas.
+
+- Certifique-se de que os testes enviam o token JWT no header `Authorization` com o prefixo `Bearer `.  
+- Se quiser, para facilitar o uso, mantenha o cookie, mas os testes podem não suportar isso.
+
+---
+
+### 2. **Respostas 404 para IDs Inválidos em Agentes e Casos**
+
+Você está verificando IDs com:
+
+```js
+const idNum = Number(id);
+if (isNaN(idNum) || idNum <= 0) {
+    return next(new APIError(400, "id inválido."));
 }
 ```
 
-Mas `campos` não está definido antes desse ponto, você declarou `const { id: idBody, titulo, descricao, status, agente_id } = req.body;` mas não `campos`.
+Porém, os testes esperam status **404** para IDs inválidos em algumas situações, e em outras, 400. É importante alinhar exatamente o que o teste espera.
 
-Além disso, no início da função você tem:
+**Exemplo de inconsistência encontrada:**
+
+No `casosController.js`, no método `getCasoById`:
 
 ```js
-const allowedFields = ['titulo', 'descricao', 'status', 'agente_id'];
-const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
-if (extraFields.length > 0) {
-    return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+if (isNaN(Number(id))) {
+    return next(new APIError(404, "Caso não encontrado"))
 }
 ```
 
-Mas depois você verifica `campos.agente_id` que não existe, isso pode gerar erro.
+Aqui você retorna 404 para ID inválido, o que está correto para o teste.
 
-**Solução:** Use sempre `req.body` para verificar os campos, ou defina `const campos = req.body` antes.
-
-### Outro ponto: Mensagens de erro e status code
-
-Em várias funções você retorna erro 404 para IDs inválidos, mas o teste pode esperar 400 (bad request) para formatos inválidos e 404 para IDs que não existem no banco.
-
-Por exemplo, no `getAgenteById`:
+Mas no `agentesController.js`, você retorna 400 para id inválido:
 
 ```js
 if (isNaN(idNum) || idNum <= 0) {
+    return next(new APIError(400, "id inválido."));
+}
+```
+
+**Sugestão:**  
+Padronize o retorno para IDs inválidos de acordo com o que os testes esperam. Se o teste espera 404 para ID inválido, altere para:
+
+```js
+return next(new APIError(404, "Agente não encontrado."));
+```
+
+Esse detalhe pode causar falha nos testes.
+
+---
+
+### 3. **Status 401 ao Acessar Rotas de Agentes sem Token JWT**
+
+Os testes esperam que ao tentar acessar rotas protegidas sem enviar o token JWT no header `Authorization`, a resposta seja 401 Unauthorized.
+
+Seu middleware `authMiddleware.js` está correto e verifica:
+
+```js
+if (!token) {
+    return next(new APIError(401, "Token necessary."));
+}
+```
+
+Isso está certo! Porém, se o token não estiver sendo enviado corretamente ou se o token for inválido, o middleware retorna 401.
+
+**Possível causa:**  
+- Se o token JWT gerado na autenticação não for válido (por segredo errado, expiração ou token mal formado), o middleware rejeita.
+- Se o cliente (testes) não enviar o token no header `Authorization`, o middleware falha.
+
+**Dica:**  
+Reforce para os testes e para seu cliente que o header deve ser exatamente:
+
+```
+Authorization: Bearer <token>
+```
+
+Além disso, como falei antes, garanta que o `JWT_SECRET` está consistente.
+
+---
+
+### 4. **Deleção de Agentes e Casos com ID Inválido**
+
+Os testes esperam status 404 para deleção de agentes ou casos com ID inválido ou inexistente.
+
+Seu código está fazendo:
+
+```js
+const agenteId = await agentesRepository.readById(id);
+if (!agenteId) {
     return next(new APIError(404, "Agente não encontrado"));
 }
 ```
 
-Seria mais correto retornar 400 para ID inválido (ex: não numérico ou negativo), e 404 para ID não encontrado.
-
----
-
-## 3. Resposta no Registro do Usuário
-
-No seu `authController.register`, você retorna:
-
-```js
-res.status(201).json({ safeUser });
-```
-
-Isso gera uma resposta assim:
-
-```json
-{
-  "safeUser": {
-    "id": 1,
-    "nome": "André",
-    "email": "andre@gmail.com"
-  }
-}
-```
-
-Mas o teste espera o objeto do usuário diretamente, sem o wrapper `safeUser`, ou seja:
-
-```json
-{
-  "id": 1,
-  "nome": "André",
-  "email": "andre@gmail.com"
-}
-```
-
-**Solução:** Mude para:
-
-```js
-res.status(201).json(safeUser);
-```
-
-Para que o JSON enviado seja exatamente o que o teste espera.
-
----
-
-## 4. Estrutura de Diretórios e Arquivos
-
-Você está seguindo a estrutura esperada, com os arquivos e pastas organizados em:
-
-- db/migrations
-- db/seeds
-- routes/
-- controllers/
-- repositories/
-- middlewares/
-- utils/
-
-Isso é ótimo! 👍
-
----
-
-## 5. Pequenas Recomendações de Boas Práticas
-
-- No `authController.register`, você valida o email depois de buscar o usuário no banco. Seria melhor validar o formato do email antes para evitar consultas desnecessárias.
-- Em `casosController.completeUpdateCaso`, tem uma validação estranha que retorna erro 404 para ID inválido, mas a mensagem diz "Agente não encontrado", isso pode confundir.
-
----
-
-## Exemplos de Correções
-
-### Corrigindo a resposta do registro do usuário:
-
-```js
-const { senha: _, ...safeUser } = newUser;
-res.status(201).json(safeUser);
-```
-
-### Ajustando validação de ID inválido para 400:
+Isso está correto. Porém, você também verifica o ID antes:
 
 ```js
 if (isNaN(idNum) || idNum <= 0) {
-    return next(new APIError(400, "ID inválido."));
+    return next(new APIError(400, "id inválido."));
 }
 ```
 
-### Definindo `campos` antes de usar:
+Como comentei antes, o teste pode esperar 404 para ID inválido, não 400.
+
+**Sugestão:**  
+Padronize o erro para 404 quando o ID for inválido ou não existir, para passar os testes.
+
+---
+
+### 5. **Outros Pontos Importantes**
+
+- No seu `server.js`, você não está usando `require('dotenv').config()`. Isso pode fazer com que as variáveis do `.env` não sejam carregadas, especialmente `JWT_SECRET` e `SALT_ROUNDS`. Isso pode causar problemas de autenticação.
+
+- Seu middleware de erro está bem implementado, o que é ótimo para capturar erros personalizados.
+
+- A validação da senha no `authController.js` está correta e atende ao requisito do desafio.
+
+---
+
+### 🛠️ Exemplos de Ajustes Práticos para Você
+
+**1. Adicione no topo do seu `server.js`:**
 
 ```js
-const campos = req.body;
+require('dotenv').config();
+```
 
-if (campos.agente_id !== undefined && campos.agente_id !== caso.agente_id) {
-    return next(new APIError(400, "Campo 'agente_id' não deve ser alterado."));
+**2. Padronize o retorno para IDs inválidos para status 404 nas controllers de agentes e casos:**
+
+No `agentesController.js`, substitua:
+
+```js
+if (isNaN(idNum) || idNum <= 0) {
+    return next(new APIError(400, "id inválido."));
 }
 ```
 
----
+por:
 
-## Recursos para você aprofundar:
+```js
+if (isNaN(idNum) || idNum <= 0) {
+    return next(new APIError(404, "Agente não encontrado."));
+}
+```
 
-- Para autenticação e JWT, recomendo fortemente este vídeo, feito pelos meus criadores, que explica tudo sobre segurança e autenticação: https://www.youtube.com/watch?v=Q4LQOfYwujk  
-- Para entender melhor o uso do JWT na prática, este vídeo é excelente: https://www.youtube.com/watch?v=keS0JWOypIU  
-- Para aprimorar o uso de bcrypt e hashing de senha, veja este vídeo: https://www.youtube.com/watch?v=L04Ln97AwoY  
-- Se quiser reforçar a estrutura MVC e organização do seu projeto, este vídeo é uma ótima pedida: https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
+E faça o mesmo para outros métodos que verificam ID.
 
----
-
-## Resumo Final para Focar
-
-- Corrija a resposta do endpoint de registro para retornar o objeto do usuário diretamente, sem o wrapper `safeUser`.
-- Ajuste as validações de IDs inválidos para retornarem status 400 (Bad Request) em vez de 404.
-- Padronize o uso do objeto `req.body` para verificar os campos, evitando variáveis indefinidas como `campos`.
-- Verifique se o token JWT está sendo gerado e enviado corretamente para rotas protegidas, e se o middleware valida corretamente.
-- Reforce as mensagens de erro para que sejam claras e condizentes com o status code.
-- Continue aplicando o middleware de autenticação nas rotas sensíveis (agentes e casos) como você já fez.
-- Mantenha a estrutura do projeto organizada, isso facilita muito a manutenção e escalabilidade.
+**3. Verifique se o token JWT está sendo gerado com a mesma `JWT_SECRET` do ambiente e que os testes enviam o token no header `Authorization` corretamente.**
 
 ---
 
-André, você já está com uma base muito sólida e mostrou domínio nos conceitos de segurança e autenticação. Com esses ajustes finos, sua API vai ficar redondinha e pronta para produção! 💪✨
+### 📚 Recomendações de Aprendizado para Você
 
-Continue assim, aprendendo com cada detalhe e sempre buscando entender o porquê das coisas. Qualquer dúvida, estou aqui para ajudar! 😉
+Para consolidar seu conhecimento e corrigir os pontos acima, recomendo fortemente os seguintes vídeos:
 
-Um abraço e sucesso no seu código! 🚀👨‍💻👩‍💻
+- Para entender melhor como configurar variáveis de ambiente e conectar o banco com Docker e Knex:  
+  https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s  
+  https://www.youtube.com/watch?v=dXWy_aGCW1E  
+
+- Para aprofundar no uso do Knex para migrations e queries:  
+  https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
+
+- Para reforçar conceitos de autenticação, JWT e bcrypt:  
+  Esse vídeo, feito pelos meus criadores, fala muito bem sobre conceitos básicos e fundamentais de cibersegurança e autenticação:  
+  https://www.youtube.com/watch?v=Q4LQOfYwujk  
+
+- Para entender o uso prático de JWT e bcrypt juntos:  
+  https://www.youtube.com/watch?v=L04Ln97AwoY
+
+---
+
+### ✨ Resumo Rápido para Focar
+
+- **Adicione `require('dotenv').config()` no `server.js` para carregar variáveis de ambiente.**
+- **Padronize os erros de ID inválido para retornar status 404 em agentes e casos, conforme esperado nos testes.**
+- **Verifique se o token JWT é gerado com o segredo correto e se está sendo enviado no header `Authorization` nos testes e clientes.**
+- **Garanta que o middleware de autenticação esteja funcionando e o token esteja válido para acessar rotas protegidas.**
+- **Revise o fluxo de criação, listagem, atualização e deleção de agentes e casos para garantir que retornem os status corretos e dados esperados.**
+
+---
+
+andrelobo55, você está muito perto da aprovação total! Seu código está bem estruturado e você já domina muitos conceitos importantes. Com esses ajustes finos, tenho certeza que sua API vai brilhar! ✨
+
+Continue firme, revise com calma os pontos que destaquei, e não hesite em aprofundar nos recursos indicados. Estou aqui torcendo pelo seu sucesso! 💪🚓
+
+Se precisar, só chamar! 😉
+
+Um grande abraço e bons códigos! 👨‍💻👩‍💻
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
