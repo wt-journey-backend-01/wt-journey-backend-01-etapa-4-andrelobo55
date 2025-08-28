@@ -11,6 +11,11 @@ const getAllAgentes = async (req, res, next) => {
 const getAgenteById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const idNum = Number(id);
+        if (isNaN(idNum) || idNum <= 0) {
+            return next(new APIError(404, "Agente não encontrado"));
+        }
+        
         const agente = await agentesRepository.readById(id);
 
         if (!agente) {
@@ -31,7 +36,7 @@ const createAgente = async (req, res, next) => {
         if (extraFields.length > 0) {
             return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
         }
-        
+
         const { nome, dataDeIncorporacao, cargo } = req.body;
 
         if (!nome) {
