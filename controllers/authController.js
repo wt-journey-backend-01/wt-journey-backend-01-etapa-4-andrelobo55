@@ -43,17 +43,23 @@ const login = async (req, res, next) => {
 
 const register = async (req, res, next) => {
     try {
+        const allowedFields = ['nome', 'email', 'senha'];
+        const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+        if (extraFields.length > 0) {
+            return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+        }
+        
         const { nome, email, senha } = req.body;
 
-        if(!nome || nome.trim() === '') {
+        if (!nome || nome.trim() === '') {
             return next(new APIError(400, "Campo 'nome' não pode ser vazio."));
         }
 
-        if(!email || email.trim() === '') {
+        if (!email || email.trim() === '') {
             return next(new APIError(400, "Campo 'email' não pode ser vazio."));
         }
 
-        if(!senha || senha.trim() === '') {
+        if (!senha || senha.trim() === '') {
             return next(new APIError(400, "Campo 'senha' não pode ser vazio."));
         }
 
@@ -66,7 +72,7 @@ const register = async (req, res, next) => {
         // email enviado pelo body
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if(!emailRegex.test(email)) {
+        if (!emailRegex.test(email)) {
             return next(new APIError(400, "Email inválido"));
         }
 
@@ -89,9 +95,9 @@ const register = async (req, res, next) => {
 }
 
 const logout = (req, res, next) => {
-        res.clearCookie('token', { path: '/' });
+    res.clearCookie('token', { path: '/' });
 
-        return res.status(200).json({ status: 200, message: 'Logout successfully.' });
+    return res.status(200).json({ status: 200, message: 'Logout successfully.' });
 }
 
 module.exports = { login, register, logout };
