@@ -12,14 +12,14 @@ const login = async (req, res, next) => {
         // mesmo email passado no body
 
         if (!user) { // verifica se o usuário existe
-            return next(new APIError(404, 'User not found.'));
+            return next(new APIError(401, 'Invalid credentials.'));
         }
 
         const isPasswordValid = await bcrypt.compare(senha, user.senha); // compara se a senha do
         // body é a mesma que a que está armazenada no banco de dados
 
         if (!isPasswordValid) { // senão for a mesma, retorna erro
-            return next(new APIError(400, 'Invalid password.'));
+            return next(new APIError(401, 'Invalid crendentials.'));
         }
 
         const token = jwt.sign({ id: user.id, nome: user.nome, email: user.email }, SECRET,
