@@ -115,7 +115,7 @@ const completeUpdateCaso = async (req, res, next) => {
             return next(new APIError(404, "Agente não encontrado"));
         }
 
-        if (campos.agente_id !== undefined && campos.agente_id !== caso.agente_id) {
+        if (agente_id !== undefined && agente_id !== caso.agente_id) {
             return next(new APIError(400, "Campo 'agente_id' não deve ser alterado."));
         }
 
