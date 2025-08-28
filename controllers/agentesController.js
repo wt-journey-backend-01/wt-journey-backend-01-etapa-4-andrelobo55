@@ -15,7 +15,7 @@ const getAgenteById = async (req, res, next) => {
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }
-        
+
         const agente = await agentesRepository.readById(id);
 
         if (!agente) {
@@ -74,6 +74,12 @@ const completeUpdateAgente = async (req, res, next) => {
         }
 
         const { id: idBody, nome, dataDeIncorporacao, cargo } = req.body;
+
+        const allowedFields = ['id', 'nome', 'dataDeIncorporacao', 'cargo'];
+        const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+        if (extraFields.length > 0) {
+            return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+        }
 
         if (idBody && idBody !== id) {
             return next(new APIError(400, "Não é permitido alterar o campo 'id'"));
