@@ -13,7 +13,7 @@ const getCasoById = async (req, res, next) => {
         const { id } = req.params;
 
         if (isNaN(Number(id))) {
-            return next(new APIError(404, "Caso não encontrado"))
+            return next(new APIError(400, "id inválido."))
         }
 
         const caso = await casosRepository.readById(id);
