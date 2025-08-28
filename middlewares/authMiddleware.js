@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const APIError = require('../utils/errorHandler');
 
 const authMiddleware = (req, res, next) => {
+    let token = null;
     const authHeader = req.headers["authorization"]; // buscar o valor dentro do header do cabeçalho
     // da chave 'authorization'
     const cookieToken = req.cookies?.token;
