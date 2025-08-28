@@ -44,8 +44,31 @@ const login = async (req, res, next) => {
 const register = async (req, res, next) => {
     try {
         const { nome, email, senha } = req.body;
+
+        if(!nome || nome.trim() === '') {
+            return next(new APIError(400, "Campo 'nome' não pode ser vazio."));
+        }
+
+        if(!email || email.trim() === '') {
+            return next(new APIError(400, "Campo 'email' não pode ser vazio."));
+        }
+
+        if(!senha || senha.trim() === '') {
+            return next(new APIError(400, "Campo 'senha' não pode ser vazio."));
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+        if (!passwordRegex.test(senha)) {
+            return next(new APIError(400, "Senha deve ter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais."));
+        }
+
         const user = await usuariosRepository.readByEmail(email); // recebe um usuário a partir do
         // email enviado pelo body
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!emailRegex.test(email)) {
+            return next(new APIError(400, "Email inválido"));
+        }
 
         if (user) { // verifica se o email existe
             return next(new APIError(400, 'Email already exists.'));
