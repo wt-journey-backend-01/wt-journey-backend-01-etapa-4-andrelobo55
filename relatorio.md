@@ -1,6 +1,6 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 3 créditos restantes para usar o sistema de feedback AI.
+Você tem 2 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para andrelobo55:
 
@@ -8,226 +8,218 @@ Nota final: **92.4/100**
 
 Olá, andrelobo55! 👋🚀
 
-Primeiramente, parabéns pelo empenho e pela nota excelente de **92.4/100**! 🎉 Você implementou muito bem a parte de usuários, com registro, login, logout e exclusão funcionando perfeitamente, além de ter cuidado com a segurança usando bcrypt para hash de senha e JWT para autenticação. Isso é fundamental para uma aplicação profissional e você mandou muito bem! 👏
+Antes de mais nada, parabéns pelo excelente trabalho! 🎉 Você atingiu uma nota muito boa (92.4/100), mostrando que seu código está bem estruturado e que você domina os conceitos essenciais de autenticação, segurança e organização da API REST com Node.js, Express e PostgreSQL. Além disso, você implementou corretamente o registro, login, logout, exclusão de usuários e proteção das rotas com JWT, o que é fundamental para um sistema seguro. Isso é sensacional! 👏👏
 
 ---
 
-### 🎖️ Destaques Positivos
+### 🎯 Pontos Fortes que Merecem Destaque
 
-- A autenticação via JWT está funcionando corretamente, inclusive com o token sendo armazenado em cookie HTTP-only, o que é uma ótima prática.
-- O tratamento de erros está consistente, com mensagens claras e status codes apropriados.
-- A validação das senhas é robusta, cobrindo requisitos de complexidade.
-- A estrutura do projeto está muito próxima do esperado, com controllers, repositories, middlewares e rotas bem organizados.
-- Você implementou corretamente os endpoints de usuários (`/auth/register`, `/auth/login`, `/auth/logout` e `/usuarios/:id` para exclusão).
-- A documentação no **INSTRUCTIONS.md** está clara e bem detalhada.
-- Os testes bônus que você passou mostram que você avançou além do básico, o que é ótimo para seu aprendizado!
+- **Autenticação e segurança:** Seu uso do bcrypt para hash de senha e JWT para autenticação está muito bem feito! A validação da senha e do email no `authController` está completa e robusta.
+- **Middleware de autenticação:** Excelente trabalho em permitir tanto o token via header quanto via cookie, aumentando a flexibilidade.
+- **Tratamento de erros:** Você criou um handler customizado (`APIError`) e usou ele de forma consistente para retornar mensagens claras e apropriadas.
+- **Documentação:** O arquivo `INSTRUCTIONS.md` está bem detalhado, explicando o fluxo de autenticação e exemplos de uso do JWT.
+- **Estrutura do projeto:** Sua organização de pastas e arquivos está alinhada com o padrão esperado para o desafio, o que facilita a manutenção e escalabilidade.
 
----
-
-### 🚨 Análise dos Testes que Falharam (Base e Bônus)
-
-Você teve algumas falhas importantes nos testes base relacionados a agentes e casos, que são essenciais para o funcionamento completo da API. Vou detalhar cada um para você entender a raiz do problema e como corrigir.
+Além disso, você conseguiu passar todos os testes básicos relacionados a usuários, logout, JWT e exclusão, o que mostra que a parte de autenticação está muito bem implementada! 🌟
 
 ---
 
-## 1. Falha:  
-**`AGENTS: Cria agentes corretamente com status code 201 e os dados inalterados do agente mais seu ID`**  
+### 🚩 Análise dos Testes que Falharam e Como Corrigir
+
+Você teve algumas falhas em testes importantes relacionados aos **agentes** e **casos**, que são o core do sistema. Vamos analisar cada um com calma para entender a raiz do problema e como ajustar.
+
+---
+
+#### 1. Teste: `'AGENTS: Cria agentes corretamente com status code 201 e os dados inalterados do agente mais seu ID'` — Falha
+
 **Possível causa raiz:**
 
-- Seu código do `createAgente` está validando campos extras e obrigatórios corretamente, e o repositório parece correto.
-- Porém, o teste indica que o agente criado pode estar retornando dados diferentes do esperado, talvez por campos extras, ou o formato da resposta.
-- Também vale checar se o middleware de autenticação está sendo aplicado corretamente para proteger a rota POST `/agentes`.
-- No seu `server.js`, você usa `app.use("/agentes", agentesRoutes);` e no `agentesRoutes.js` a rota POST tem o `authMiddleware`, o que está correto.
-- Então, o ponto de atenção é o retorno da criação do agente: no controller você retorna exatamente o objeto criado do banco, o que está certo.
-- Um detalhe importante: no seu seed, os agentes têm o campo `dataDeIncorporacao` como string no formato `'YYYY-MM-DD'`, e na migration ele é do tipo `date`. Certifique-se que o formato enviado no POST é compatível e que o banco está armazenando e retornando no formato esperado.
-- Outra possibilidade: no seu controller, você aceita o campo `dataDeIncorporacao` como string, mas não o transforma em Date antes de inserir, o que pode causar inconsistência.
-- **Sugestão:** Tente garantir que o campo `dataDeIncorporacao` está sendo enviado e armazenado no formato correto. Se necessário, converta para objeto Date antes de salvar.
-
-Exemplo de ajuste no controller:
+No seu `agentesController.js`, no método `createAgente`, você está convertendo a data `dataDeIncorporacao` para um objeto `Date`:
 
 ```js
-const { nome, dataDeIncorporacao, cargo } = req.body;
-
 const dataIncorpDate = new Date(dataDeIncorporacao);
-if (isNaN(dataIncorpDate.getTime())) {
-  return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido."));
-}
+```
 
-// Use dataIncorpDate para salvar no banco
+E depois, ao criar o agente, você passa:
+
+```js
 const agente = await agentesRepository.create({ nome, dataDeIncorporacao: dataIncorpDate, cargo });
 ```
 
----
+Porém, no banco de dados, a coluna `dataDeIncorporacao` é do tipo `date` (sem hora). Quando você passa um objeto `Date` diretamente, o Knex pode inserir um timestamp completo, o que pode gerar inconsistência no formato esperado.
 
-## 2. Falha:  
-**`AGENTS: Lista todos os agentes corretamente com status code 200 e todos os dados de cada agente listados corretamente`**
+Além disso, ao retornar o objeto criado, o campo `dataDeIncorporacao` pode vir no formato ISO completo (com hora), enquanto o teste espera apenas a data no formato `YYYY-MM-DD`.
 
-- A função `getAllAgentes` está simples e correta, retornando tudo do repositório.
-- O problema pode estar na proteção da rota: se o token JWT não for enviado, o teste espera 401.
-- Você aplicou o middleware `authMiddleware` em todas as rotas de agentes, o que está certo.
-- Verifique se o token está sendo realmente requerido e validado para esse endpoint.
-- Outra possibilidade é que o banco retorne os dados num formato inesperado, ou com campos extras.
-- Certifique-se que o seed está populando a tabela `agentes` e que a migration foi executada corretamente.
+**Como corrigir:**
 
----
-
-## 3. Falha:  
-**`AGENTS: Atualiza dados do agente com por completo (com PUT) corretamente com status code 200 e dados atualizados do agente listados num objeto JSON`**
-
-- No seu controller `completeUpdateAgente`, você está validando os campos, impedindo alteração do `id`, e atualizando corretamente.
-- Note que você está validando se o campo `dataDeIncorporacao` é válido com a função `isValidDate` (que não foi enviada aqui, mas suponho que verifica se não é uma data futura).
-- Um ponto crítico: no trecho abaixo:
+Converta a data para string no formato `YYYY-MM-DD` antes de inserir, assim:
 
 ```js
-const { id: idBody, nome, dataDeIncorporacao, cargo } = req.body;
+const dataIncorpDate = new Date(dataDeIncorporacao);
+const formattedDate = dataIncorpDate.toISOString().split('T')[0]; // extrai só a data
 
-if (!nome) {
-  return next(new APIError(400, "Campo 'nome' deve ser preenchido"));
-}
-
-if (!dataDeIncorporacao) {
-  return next(new APIError(400, "Campo 'dataDeIncorporacao' deve ser preenchido"));
-}
-
-if (!isValidDate(dataDeIncorporacao)) {
-  return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido ou no futuro."));
-}
-
-if (!cargo) {
-  return next(new APIError(400, "Campo 'cargo' deve ser preenchido"));
-}
+const agente = await agentesRepository.create({ nome, dataDeIncorporacao: formattedDate, cargo });
 ```
 
-- Assim como no create, o campo `dataDeIncorporacao` pode estar chegando como string e pode precisar ser convertido para Date antes da validação e atualização.
-- Além disso, no seu repositório, o método `update` espera o objeto com os campos a atualizar, e retorna o atualizado.
-- Possível que a data esteja sendo passada em formato errado para o banco, causando falha ou dados inconsistentes.
-- **Sugestão:** Converter `dataDeIncorporacao` para Date antes da validação e atualização, como no create.
+Ou, para garantir consistência, trate também na atualização.
+
+Outra dica é verificar o retorno do banco e garantir que o formato da data esteja coerente com o esperado pelo teste.
 
 ---
 
-## 4. Falha:  
-**`AGENTS: Recebe status code 401 ao tentar buscar agente corretamente mas sem header de autorização com token JWT`**
+#### 2. Teste: `'AGENTS: Lista todos os agente corretamente com status code 200 e todos os dados de cada agente listados corretamente'` — Falha
 
-- Seu middleware `authMiddleware` está correto e aplicado nas rotas de agentes.
-- No entanto, no seu `server.js`, você usa `app.use(cookieParser())` **depois** de montar as rotas:
+**Possível causa raiz:**
 
-```js
-app.use("/agentes", agentesRoutes);
-app.use("/casos", casosRoutes);
-app.use("/auth", authRoutes);
-app.use("/usuarios", usuariosRoutes);
-app.use(cookieParser());
-```
+Esse erro pode estar relacionado ao mesmo problema do formato da data `dataDeIncorporacao` na consulta. Se os dados retornados possuem timestamps com horas, o teste pode falhar por não bater exatamente com o esperado.
 
-- Isso pode ser um problema porque o middleware `authMiddleware` tenta ler o cookie `token` para autenticação, mas o `cookieParser` só está sendo registrado depois das rotas.
-- **Causa raiz:** O `cookieParser` deve ser registrado **antes** das rotas para que os cookies estejam disponíveis no `req.cookies` dentro do middleware de autenticação.
-- **Correção simples:**
+**Como corrigir:**
+
+No `agentesRepository.js`, para o método `readAll()`, você pode formatar a data antes de retornar ou garantir que o banco retorne apenas a parte da data.
+
+Exemplo:
 
 ```js
-app.use(cookieParser()); // mover para antes das rotas
-app.use(express.json());
-app.use("/agentes", agentesRoutes);
-app.use("/casos", casosRoutes);
-app.use("/auth", authRoutes);
-app.use("/usuarios", usuariosRoutes);
-```
-
-- Essa mudança vai garantir que o middleware de autenticação funcione corretamente ao buscar o token via cookie.
-
----
-
-## 5. Falha:  
-**`CASES: Recebe status code 404 ao tentar buscar um caso por ID inválido`**
-
-- No seu `casosController.js`, na função `getCasoById`, você faz:
-
-```js
-if (isNaN(Number(id))) {
-  return next(new APIError(404, "Caso não encontrado."))
+async function readAll() {
+    const agentes = await db('agentes').select("*");
+    return agentes.map(agente => ({
+        ...agente,
+        dataDeIncorporacao: agente.dataDeIncorporacao.toISOString().split('T')[0]
+    }));
 }
 ```
 
-- Isso está certo, impede IDs inválidos.
-- Mas o teste pode estar passando um ID inválido que não é numérico, ou um número negativo.
-- Você pode melhorar a validação para:
+Assim, o formato fica padronizado.
+
+---
+
+#### 3. Teste: `'AGENTS: Atualiza dados do agente com por completo (com PUT) corretamente com status code 200 e dados atualizados do agente listados num objeto JSON'` — Falha
+
+**Possível causa raiz:**
+
+No método `completeUpdateAgente` do `agentesController.js`, você está recebendo `dataDeIncorporacao` do corpo e passando diretamente para o repositório:
+
+```js
+const { nome, dataDeIncorporacao, cargo } = req.body;
+// ...
+const agenteAtualizado = await agentesRepository.update(id, { nome, dataDeIncorporacao, cargo });
+```
+
+Aqui, `dataDeIncorporacao` é uma string, mas no banco espera-se uma data. Se o formato não for coerente, pode causar falha no teste.
+
+Além disso, você validou a data com `isValidDate` e criou um objeto `Date` para validação, porém não converteu para string formatada antes de atualizar.
+
+**Como corrigir:**
+
+Faça o mesmo tratamento da data que sugeri para o create, convertendo para `YYYY-MM-DD` antes de passar para o update:
+
+```js
+const dataIncorpDate = new Date(dataDeIncorporacao);
+const formattedDate = dataIncorpDate.toISOString().split('T')[0];
+
+const agenteAtualizado = await agentesRepository.update(id, { nome, dataDeIncorporacao: formattedDate, cargo });
+```
+
+---
+
+#### 4. Teste: `'AGENTS: Recebe status code 401 ao tentar buscar agente corretamente mas sem header de autorização com token JWT'` — Falha
+
+**Possível causa raiz:**
+
+Esse teste verifica se a proteção das rotas está funcionando, ou seja, se o middleware `authMiddleware` está bloqueando requisições sem token válido.
+
+Você aplicou o middleware em todas as rotas de agentes, o que está correto:
+
+```js
+router.get("/", authMiddleware, agentesController.getAllAgentes);
+```
+
+No entanto, o teste falha, indicando que o middleware pode não estar bloqueando corretamente.
+
+Analisando o seu `authMiddleware`, ele busca o token no header `Authorization` e também nos cookies. Se não encontrar, retorna erro 401.
+
+Isso parece correto, mas um ponto importante é o uso do `next(new APIError(401, "Token necessary."))`.
+
+Se em algum lugar o erro não está sendo capturado corretamente, pode não retornar o status esperado.
+
+**Como corrigir:**
+
+Verifique se o middleware está corretamente importado e aplicado em todas as rotas protegidas. Também certifique-se que o middleware está chamando `next()` ou retornando a resposta corretamente.
+
+Como você está usando um error handler global no `server.js`, isso deve funcionar.
+
+Outra coisa importante: no middleware, a variável `process.env.JWT_SECRET` pode estar vazia, então o fallback `'secret'` é usado. Se o teste espera que o segredo esteja na variável de ambiente, pode haver conflito.
+
+Garanta que o `.env` contenha a variável `JWT_SECRET` corretamente configurada.
+
+---
+
+#### 5. Teste: `'CASES: Recebe status code 404 ao tentar buscar um caso por ID inválido'` — Falha
+
+**Possível causa raiz:**
+
+No `casosController.js`, no método `getCasoById`, você faz essa validação:
 
 ```js
 const idNum = Number(id);
 if (isNaN(idNum) || idNum <= 0) {
-  return next(new APIError(404, "Caso não encontrado."));
+    return next(new APIError(404, "Caso não encontrado."));
 }
 ```
 
-- Isso mantém a consistência com as validações que você fez para agentes.
-- Essa validação mais rígida evita que IDs inválidos passem e causem erros inesperados.
+Isso está correto para IDs inválidos.
+
+O problema pode estar no tipo do campo `id` no banco, que é `increments` (inteiro), e no fato de que você está recebendo o parâmetro como string.
+
+Se o ID for uma string que não converte para número, o teste deve passar.
+
+Se o teste falha, pode ser que o endpoint não esteja respondendo 404 como esperado, talvez por alguma outra rota ou middleware.
+
+**Como corrigir:**
+
+Confirme que o middleware `authMiddleware` está aplicado na rota `/casos/:id` (o que está no seu `casosRoutes.js`).
+
+Além disso, verifique se o erro `next(new APIError(404, ...))` está sendo tratado corretamente no middleware de erro global.
 
 ---
 
-### 📋 Sobre a Estrutura do Projeto
+### 💡 Dicas Extras para Melhorias e Boas Práticas
 
-Sua estrutura está muito próxima do esperado, mas notei que você possui um arquivo `usuariosRoutes.js` que não foi listado na estrutura oficial esperada (que só cita `authRoutes.js` para autenticação e não menciona rotas separadas para usuários).
-
-- Se você criou rotas extras para usuários, tudo bem, mas certifique-se de que elas estão documentadas e que não conflitam com o `/auth` para evitar confusão.
-- A estrutura oficial esperada para rotas é:
-
-```
-routes/
-├── agentesRoutes.js
-├── casosRoutes.js
-└── authRoutes.js
-```
-
-- Se for necessário, mantenha as rotas de usuários dentro do `authRoutes.js` ou documente claramente.
-- Essa organização ajuda a manter o projeto mais claro e alinhado com o padrão MVC.
+- **Formatação de datas:** Para evitar problemas de formato, sempre converta as datas para string no formato `YYYY-MM-DD` antes de salvar ou retornar. Isso evita inconsistências entre o JavaScript e o banco.
+- **Variável JWT_SECRET:** Nunca deixe o segredo do JWT hardcoded no código. Você já usa a variável de ambiente, mas certifique-se que ela está definida no `.env` e carregada com `dotenv`. Se não estiver, isso pode causar falhas inesperadas na autenticação.
+- **Tratamento de erros:** Seu middleware global de erros está ótimo. Continue usando ele para garantir respostas consistentes.
+- **Testes e documentação:** Continue mantendo a documentação atualizada no `INSTRUCTIONS.md` para facilitar o uso e entendimento da API.
 
 ---
 
-### 🔑 Resumo das Recomendações
+### 📚 Recursos Recomendados para Você
 
-- **Mova o `cookieParser()` para antes do registro das rotas no `server.js`**, para que o middleware de autenticação leia os cookies corretamente e evite erros 401 inesperados.
-- **Garanta que o campo `dataDeIncorporacao` seja convertido para Date antes de validar e salvar** no banco, tanto na criação quanto na atualização de agentes.
-- **Aprimore a validação de IDs** para agentes e casos, verificando se o número é positivo, para evitar erros 404 por IDs inválidos.
-- **Revise a estrutura das rotas**, evitando rotas extras não documentadas e mantendo o padrão esperado para facilitar manutenção e testes.
-- **Verifique se as migrations foram executadas corretamente**, e se os seeds estão populando as tabelas para que os testes base funcionem sem falhas.
-
----
-
-### 📚 Recursos para Você Explorar e Aprender Mais
-
-- Para entender melhor a importância da ordem dos middlewares e manipulação de cookies:  
-  https://www.youtube.com/watch?v=Q4LQOfYwujk  
-  *Esse vídeo, feito pelos meus criadores, fala muito bem sobre autenticação e uso de cookies em Node.js.*
-
-- Para aprofundar no uso de JWT e proteger rotas com Express:  
-  https://www.youtube.com/watch?v=keS0JWOypIU  
-  *Vídeo prático sobre JWT que vai te ajudar a entender melhor os fluxos de token.*
-
-- Para dominar a manipulação de datas e validações em JavaScript:  
+- Para entender melhor o uso do **Knex e manipulação de datas**, recomendo este vídeo:  
   https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s  
-  *Guia detalhado do Knex e manipulação de dados no banco, incluindo formatos de datas.*
+  Ele vai te ajudar a manipular datas e queries com Knex de forma mais segura e correta.
 
-- Para garantir que seu projeto siga boas práticas e arquitetura MVC:  
-  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s  
-  *Esse vídeo vai te ajudar a entender como organizar seu código em controllers, repositories e rotas.*
+- Para aprimorar seu conhecimento em **autenticação JWT e segurança**, veja este vídeo feito pelos meus criadores, que explica muito bem os conceitos fundamentais:  
+  https://www.youtube.com/watch?v=Q4LQOfYwujk
 
----
-
-### ✨ Resumo Final para Focar
-
-- Corrija a ordem do middleware `cookieParser()` no `server.js`.
-- Converta e valide corretamente o campo `dataDeIncorporacao` para Date antes de salvar ou atualizar agentes.
-- Aprimore a validação de IDs para agentes e casos (número positivo).
-- Verifique a estrutura das rotas e mantenha o padrão esperado para facilitar testes e manutenção.
-- Confirme que suas migrations e seeds estão aplicados corretamente para que os dados existam no banco durante os testes.
-- Continue documentando seus endpoints e fluxo de autenticação, como você já fez muito bem.
+- Caso queira revisar boas práticas na **estruturação de projetos Node.js com MVC**, este vídeo é excelente:  
+  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
 
 ---
 
-andrelobo55, você está muito próximo de uma solução robusta e profissional! ✨ Essas correções vão destravar os testes que faltam e te deixar com uma API segura e bem estruturada. Continue assim, aprendendo e aperfeiçoando seu código! 🚀💪
+### 📝 Resumo Rápido dos Pontos para Focar
 
-Qualquer dúvida, estou aqui para ajudar! 😉
+- Ajustar o formato da data `dataDeIncorporacao` para `YYYY-MM-DD` antes de inserir e atualizar agentes no banco.
+- Garantir que o middleware `authMiddleware` está corretamente aplicado e que o `JWT_SECRET` está configurado no `.env`.
+- Verificar tratamento de erros para retornar status 404 quando um caso ou agente não for encontrado, especialmente para IDs inválidos.
+- Continuar mantendo a documentação atualizada e clara para facilitar o uso da API.
 
-Um abraço e sucesso! 👊🔥
+---
+
+andrelobo55, você está muito próximo da perfeição! Seu código está limpo, organizado e com conceitos sólidos. Com esses ajustes pontuais, sua API vai ficar ainda mais robusta e profissional. Continue assim, você está no caminho certo! 🚀💪
+
+Qualquer dúvida, pode contar comigo! Estou aqui para ajudar você a crescer cada vez mais no mundo do backend.
+
+Um grande abraço e bons códigos! 👨‍💻👩‍💻✨
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
