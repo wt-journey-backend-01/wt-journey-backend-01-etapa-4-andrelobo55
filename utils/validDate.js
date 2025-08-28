@@ -1,4 +1,4 @@
-import { parse, isValid, format } from 'date-fns';
+const { parse, isValid, format } = require('date-fns');
 
 function isValidDate(dataString) {
     const parsed = parse(dataString, 'yyyy-MM-dd', new Date());
