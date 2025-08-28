@@ -106,6 +106,10 @@ const completeUpdateCaso = async (req, res, next) => {
         const agenteExists = await agentesRepository.readById(agente_id);
         if (!agenteExists) return next(new APIError(404, "Agente não encontrado"));
 
+        if (isNaN(Number(agente_id)) || Number(agente_id) <= 0) {
+            return next(new APIError(404, "Agente não encontrado"));
+        }
+
         const casoAtualizado = await casosRepository.update(id, { titulo, descricao, status, agente_id });
 
         return res.status(200).json(casoAtualizado);
