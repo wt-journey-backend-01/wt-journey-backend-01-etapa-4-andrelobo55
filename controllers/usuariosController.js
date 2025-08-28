@@ -16,7 +16,7 @@ async function getById(req, res, next) {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(404, "Usuário não encontrado"));
         }
         
         const user = await usuariosRepository.readById(id);
@@ -36,7 +36,7 @@ async function update(req, res, next) {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(404, "Usuário não encontrado"));
         }
 
         const user = await usuariosRepository.readById(id);
@@ -69,7 +69,7 @@ async function remove(req, res, next) {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "Agente não encontrado"));
+            return next(new APIError(404, "Usuário não encontrado"));
         }
 
         const user = await usuariosRepository.readById(id);
