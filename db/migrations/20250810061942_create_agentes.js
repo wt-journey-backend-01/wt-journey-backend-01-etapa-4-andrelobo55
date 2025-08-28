@@ -3,17 +3,6 @@
  * @returns { Promise<void> }
  */
 exports.up = function(knex) {
-  
-};
-
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- *//**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.up = function(knex) {
   return knex.schema.createTable('agentes', function(table) {
     table.increments('id').primary();
     table.string('nome').notNullable();
