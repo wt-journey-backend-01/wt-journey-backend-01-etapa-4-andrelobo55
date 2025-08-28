@@ -12,8 +12,9 @@ const getCasoById = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        if (isNaN(Number(id))) {
-            return next(new APIError(404, "Caso não encontrado."))
+        const idNum = Number(id);
+        if (isNaN(idNum) || idNum <= 0) {
+            return next(new APIError(404, "Caso não encontrado."));
         }
 
         const caso = await casosRepository.readById(id);
