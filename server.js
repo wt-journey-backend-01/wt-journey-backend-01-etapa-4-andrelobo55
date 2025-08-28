@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
 const setupSwagger = require('./docs/swagger');
 const cookieParser = require('cookie-parser');
+require('dotenv').config();
 
 app.use(express.json());
 app.use("/agentes", agentesRoutes);
