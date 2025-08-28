@@ -103,6 +103,11 @@ const completeUpdateAgente = async (req, res, next) => {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' deve ser preenchido"));
         }
 
+         const dataIncorpDate = new Date(dataDeIncorporacao);
+        if (isNaN(dataIncorpDate.getTime())) {
+            return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido."));
+        }
+        
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido ou no futuro."));
         }
