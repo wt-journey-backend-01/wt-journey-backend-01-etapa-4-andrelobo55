@@ -67,6 +67,7 @@ const createAgente = async (req, res, next) => {
 const completeUpdateAgente = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }
@@ -117,6 +118,7 @@ const completeUpdateAgente = async (req, res, next) => {
 const updateCargoAgente = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }
@@ -145,6 +147,7 @@ const updateCargoAgente = async (req, res, next) => {
 const deleteAgente = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }

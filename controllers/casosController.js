@@ -11,7 +11,7 @@ const getAllCasos = async (req, res, next) => {
 const getCasoById = async (req, res, next) => {
     try {
         const { id } = req.params;
-
+        
         if (isNaN(Number(id))) {
             return next(new APIError(404, "Caso não encontrado"))
         }
@@ -71,6 +71,7 @@ const createCaso = async (req, res, next) => {
 const completeUpdateCaso = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }
@@ -125,6 +126,7 @@ const completeUpdateCaso = async (req, res, next) => {
 const updatePartialCaso = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }
@@ -168,6 +170,7 @@ const updatePartialCaso = async (req, res, next) => {
 const deleteCaso = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
             return next(new APIError(404, "Agente não encontrado"));
         }
