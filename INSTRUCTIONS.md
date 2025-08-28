@@ -22,7 +22,7 @@ Resposta(201):
 }
 ```
 
-Se o e-mail já estiver registrado ou o usuário já existe:
+Se o e-mail já estiver registrado:
 ```json
 Resposta(400):
 {
