@@ -149,7 +149,7 @@ const deleteAgente = async (req, res, next) => {
         const { id } = req.params;
         const idNum = Number(id);
         if (isNaN(idNum) || idNum <= 0) {
-            return next(new APIError(404, "id inválido."));
+            return next(new APIError(404, "Agente não encontrado."));
         }
         
         const agenteId = await agentesRepository.readById(id);
