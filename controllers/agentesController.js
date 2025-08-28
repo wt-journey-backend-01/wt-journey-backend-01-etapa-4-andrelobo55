@@ -2,13 +2,13 @@ const agentesRepository = require("../repositories/agentesRepository");
 const isValidDate = require("../utils/validDate");
 const APIError = require("../utils/errorHandler");
 
-const getAllAgentes = async(req, res, next) => {
+const getAllAgentes = async (req, res, next) => {
     const agentes = await agentesRepository.readAll();
 
     return res.status(200).json(agentes);
 }
 
-const getAgenteById = async(req, res, next) => {
+const getAgenteById = async (req, res, next) => {
     try {
         const { id } = req.params;
         const agente = await agentesRepository.readById(id);
@@ -24,8 +24,14 @@ const getAgenteById = async(req, res, next) => {
     }
 }
 
-const createAgente = async(req, res, next) => {
+const createAgente = async (req, res, next) => {
     try {
+        const allowedFields = ['nome', 'dataDeIncorporacao', 'cargo'];
+        const extraFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
+        if (extraFields.length > 0) {
+            return next(new APIError(400, `Campos não permitidos: ${extraFields.join(', ')}`));
+        }
+        
         const { nome, dataDeIncorporacao, cargo } = req.body;
 
         if (!nome) {
@@ -46,14 +52,14 @@ const createAgente = async(req, res, next) => {
 
         const agente = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
 
-       res.status(201).json(agente);
+        res.status(201).json(agente);
     }
     catch (error) {
         next(error);
     }
 }
 
-const completeUpdateAgente = async(req, res, next) => {
+const completeUpdateAgente = async (req, res, next) => {
     try {
         const { id } = req.params;
         const agente = await agentesRepository.readById(id);
@@ -93,7 +99,7 @@ const completeUpdateAgente = async(req, res, next) => {
     }
 }
 
-const updateCargoAgente = async(req, res, next) => {
+const updateCargoAgente = async (req, res, next) => {
     try {
         const { id } = req.params;
         const agente = await agentesRepository.readById(id);
@@ -117,7 +123,7 @@ const updateCargoAgente = async(req, res, next) => {
     }
 }
 
-const deleteAgente = async(req, res, next) => {
+const deleteAgente = async (req, res, next) => {
     try {
         const { id } = req.params;
         const agenteId = await agentesRepository.readById(id);
