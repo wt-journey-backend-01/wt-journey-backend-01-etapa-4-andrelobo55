@@ -7,4 +7,4 @@ function isValidDate(dataString) {
 }
 
 // console.log(validarData("2025-02-30"));
-export default isValidDate;
+module.exports = isValidDate;
