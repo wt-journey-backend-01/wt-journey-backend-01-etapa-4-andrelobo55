@@ -1,6 +1,7 @@
 const agentesRepository = require("../repositories/agentesRepository");
 const isValidDate = require("../utils/validDate");
 const APIError = require("../utils/errorHandler");
+const { format } = require('date-fns');
 
 const getAllAgentes = async (req, res, next) => {
     const agentes = await agentesRepository.readAll();
@@ -51,7 +52,6 @@ const createAgente = async (req, res, next) => {
         if (isNaN(dataIncorpDate.getTime())) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido."));
         }
-        const formattedDate = dataIncorpDate.toISOString().split('T')[0]; // extrai só a data
 
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido ou no futuro"));
@@ -61,7 +61,9 @@ const createAgente = async (req, res, next) => {
             return next(new APIError(400, "Campo 'cargo' deve ser preenchido"));
         }
 
-        const agente = await agentesRepository.create({ nome, dataDeIncorporacao: formattedDate, cargo });
+        const agente = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+
+        agente.dataDeIncorporacao = format(new Date(agente.dataDeIncorporacao), "yyyy-mm-dd");
 
         res.status(201).json(agente);
     }
@@ -108,7 +110,6 @@ const completeUpdateAgente = async (req, res, next) => {
         if (isNaN(dataIncorpDate.getTime())) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido."));
         }
-        const formattedDate = dataIncorpDate.toISOString().split('T')[0]; // extrai só a data
 
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new APIError(400, "Campo 'dataDeIncorporacao' inválido ou no futuro."));
@@ -118,7 +119,9 @@ const completeUpdateAgente = async (req, res, next) => {
             return next(new APIError(400, "Campo 'cargo' deve ser preenchido"));
         }
 
-        const agenteAtualizado = await agentesRepository.update(id, { nome, dataDeIncorporacao: formattedDate, cargo });
+        const agenteAtualizado = await agentesRepository.update(id, { nome, dataDeIncorporacao, cargo });
+
+        agenteAtualizado.dataDeIncorporacao = format(new Date(agente.dataDeIncorporacao, "yyyy-mm-dd"));
 
         return res.status(200).json(agenteAtualizado);
     }
