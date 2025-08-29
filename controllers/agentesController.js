@@ -5,8 +5,11 @@ const { format } = require('date-fns');
 
 const getAllAgentes = async (req, res, next) => {
     const agentes = await agentesRepository.readAll();
-
-    return res.status(200).json(agentes);
+    const agentesFormatados = agentes.map(agente => ({
+        ...agente,
+        dataDeIncorporacao: format(new Date(agente.dataDeIncorporacao, "yyyy-MM-dd"))
+    }));
+    return res.status(200).json(agentesFormatados);
 }
 
 const getAgenteById = async (req, res, next) => {
@@ -22,6 +25,8 @@ const getAgenteById = async (req, res, next) => {
         if (!agente) {
             return next(new APIError(404, "Agente não encontrado."));
         }
+
+        agente.dataDeIncorporacao = format(agente.dataDeIncorporacao, "yyyy-MM-dd");
 
         return res.status(200).json(agente);
     }
@@ -63,7 +68,7 @@ const createAgente = async (req, res, next) => {
 
         const agente = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
 
-        agente.dataDeIncorporacao = format(new Date(agente.dataDeIncorporacao), "yyyy-mm-dd");
+        agente.dataDeIncorporacao = format(new Date(agente.dataDeIncorporacao), "yyyy-MM-dd");
 
         res.status(201).json(agente);
     }
@@ -121,7 +126,7 @@ const completeUpdateAgente = async (req, res, next) => {
 
         const agenteAtualizado = await agentesRepository.update(id, { nome, dataDeIncorporacao, cargo });
 
-        agenteAtualizado.dataDeIncorporacao = format(new Date(agente.dataDeIncorporacao, "yyyy-mm-dd"));
+        agenteAtualizado.dataDeIncorporacao = format(new Date(agente.dataDeIncorporacao, "yyyy-MM-dd"));
 
         return res.status(200).json(agenteAtualizado);
     }
